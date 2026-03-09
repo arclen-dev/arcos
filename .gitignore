@@ -1,0 +1,41 @@
+# ArcOS .gitignore
+
+# Brave browser data (upload nothing from BraveSoftware)
+dotfiles/BraveSoftware/
+
+# Runtime/cache dirs — never commit these
+dotfiles/hypr/wallust/
+dotfiles/waybar/wallust/
+dotfiles/rofi/wallust/
+dotfiles/kitty/wallust-colors.conf
+
+# Pulse runtime files
+dotfiles/pulse/*.tdb
+dotfiles/pulse/cookie
+
+# dconf binary
+dotfiles/dconf/
+
+# Thunar runtime
+dotfiles/Thunar/accels.scm
+
+# xfce4 runtime
+dotfiles/xfce4/
+
+# pavucontrol runtime
+dotfiles/pavucontrol.ini
+
+# xsettingsd runtime
+dotfiles/xsettingsd/
+
+# mimeapps — machine specific
+dotfiles/mimeapps.list
+
+# pamac config — user specific
+dotfiles/pamac/
+
+# OS/editor junk
+.DS_Store
+*~
+*.swp
+*.swo

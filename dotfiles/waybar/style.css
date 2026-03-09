@@ -1,0 +1,190 @@
+@import "wallust/colors-waybar.css";
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESET — strip everything, build from zero
+═══════════════════════════════════════════════════════════════════ */
+* {
+    border:         none;
+    border-radius:  0;
+    font-family:    "Inter", "FiraCode Nerd Font";
+    font-size:      13px;
+    font-weight:    600;
+    min-height:     0;
+    padding:        0;
+    margin:         0;
+    transition:     color 0.2s ease, background-color 0.2s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BAR WINDOW — transparent canvas
+═══════════════════════════════════════════════════════════════════ */
+window#waybar {
+    background:     transparent;
+    color:          @foreground;
+}
+
+window#waybar.hidden {
+    opacity: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LEFT / RIGHT — empty, must be fully collapsed
+═══════════════════════════════════════════════════════════════════ */
+.modules-left,
+.modules-right {
+    background:     transparent;
+    padding:        0;
+    margin:         0;
+    min-width:      0;
+    border:         none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CENTER — this IS the pill
+═══════════════════════════════════════════════════════════════════ */
+.modules-center {
+    background-color: @background;
+    border-radius:    999px;
+    border:           1px solid alpha(@color8, 0.30);
+    padding:          5px 10px;
+    box-shadow:       0 4px 24px alpha(@background, 0.75);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WORKSPACES
+═══════════════════════════════════════════════════════════════════ */
+#workspaces {
+    padding:    0 2px;
+    margin:     0;
+}
+
+#workspaces button {
+    padding:          3px 11px;
+    margin:           0 1px;
+    background:       transparent;
+    color:            alpha(@foreground, 0.30);
+    border-radius:    999px;
+    font-size:        12px;
+    font-weight:      700;
+    min-width:        24px;
+}
+
+#workspaces button:hover {
+    background:   alpha(@color8, 0.20);
+    color:        alpha(@foreground, 0.70);
+}
+
+#workspaces button.active,
+#workspaces button.focused {
+    background:   linear-gradient(135deg, @color4, @color5);
+    color:        @background;
+    font-weight:  800;
+    padding:      3px 13px;
+}
+
+#workspaces button.urgent {
+    background:   linear-gradient(135deg, @color1, @color9);
+    color:        @background;
+}
+
+#workspaces button.occupied {
+    color:        @color7;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CLOCK
+═══════════════════════════════════════════════════════════════════ */
+#clock {
+    padding:        0 14px;
+    color:          @foreground;
+    font-size:      14px;
+    font-weight:    700;
+    letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MPRIS
+═══════════════════════════════════════════════════════════════════ */
+#mpris {
+    padding:    0 10px;
+    color:      @color6;
+    font-size:  12px;
+}
+
+#mpris.paused {
+    color: alpha(@foreground, 0.30);
+}
+
+#mpris.stopped {
+    padding:    0;
+    font-size:  0;
+    min-width:  0;
+    margin:     0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PULSEAUDIO
+═══════════════════════════════════════════════════════════════════ */
+#pulseaudio {
+    padding:    0 10px;
+    color:      @color4;
+}
+
+#pulseaudio.muted {
+    color: alpha(@foreground, 0.25);
+}
+
+#pulseaudio:hover {
+    color: @color12;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NETWORK
+═══════════════════════════════════════════════════════════════════ */
+#network {
+    padding:    0 10px;
+    color:      @color2;
+}
+
+#network.disconnected {
+    color: @color1;
+}
+
+#network:hover {
+    color: @color10;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRAY
+═══════════════════════════════════════════════════════════════════ */
+#tray {
+    padding:    0 8px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect:   dim;
+    opacity:            0.35;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect:   highlight;
+    color:              @color3;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOOLTIPS
+═══════════════════════════════════════════════════════════════════ */
+tooltip {
+    background:     @background;
+    border:         1px solid alpha(@color4, 0.40);
+    border-radius:  16px;
+    padding:        4px;
+    box-shadow:     0 4px 20px alpha(@color4, 0.12);
+}
+
+tooltip label {
+    color:          @foreground;
+    font-size:      12px;
+    font-weight:    500;
+    padding:        4px 12px;
+}

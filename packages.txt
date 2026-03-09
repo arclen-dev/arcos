@@ -1,0 +1,94 @@
+# ArcOS packages
+# These are installed via: yay -S --needed --noconfirm $(grep -v '^#' packages.txt | tr '\n' ' ')
+# GPU-specific and optional packages are handled separately in install.sh
+
+# ── Core ────────────────────────────────────────────────────────────────
+base-devel
+git
+zsh
+nano
+
+# ── Hyprland ────────────────────────────────────────────────────────────
+hyprland
+hyprlock
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+uwsm
+
+# ── Wayland utilities ───────────────────────────────────────────────────
+swww
+waybar-git
+rofi-wayland
+rofimoji
+cliphist
+wl-clipboard
+swayosd-git
+swaync
+slurp
+grim
+hyprshot
+imagemagick
+
+# ── Audio ────────────────────────────────────────────────────────────────
+pipewire
+pipewire-alsa
+pipewire-jack
+pipewire-pulse
+wireplumber
+playerctl
+pavucontrol
+
+# ── Network ─────────────────────────────────────────────────────────────
+networkmanager
+network-manager-applet
+iwd
+
+# ── Theming ─────────────────────────────────────────────────────────────
+adw-gtk-theme
+bibata-cursor-theme
+papirus-icon-theme
+nwg-look
+kvantum
+qt5ct
+qt6ct
+
+# ── Fonts ────────────────────────────────────────────────────────────────
+otf-font-awesome
+ttf-orbitron
+noto-fonts-emoji
+# Inter and FiraCode Nerd Font are installed manually by install.sh
+
+# ── Applications ─────────────────────────────────────────────────────────
+brave-bin
+thunar
+thunar-archive-plugin
+xarchiver
+mpv
+gnome-calculator
+btop
+fastfetch
+fresh-editor-bin
+pamac-aur
+
+# ── System ───────────────────────────────────────────────────────────────
+polkit-gnome
+sddm
+sddm-silent-theme
+xdg-user-dirs
+libnotify
+timeshift
+
+# ── Shell ─────────────────────────────────────────────────────────────────
+vivid
+fzf
+zram-generator
+
+# ── Misc ──────────────────────────────────────────────────────────────────
+unzip
+smartmontools
+pacman-contrib
+rate-mirrors
+efibootmgr
+
+# ── Wallust ───────────────────────────────────────────────────────────────
+wallust-git

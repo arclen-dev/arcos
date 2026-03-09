@@ -1,0 +1,25 @@
+# Color backend - fast_resize is the fastest built-in method
+backend = "fast-resize"
+
+# Palette type - dark16 gives vivid dark colors, great for ricing
+palette = "dark16"
+
+# Colorspace affects how colors are extracted and how vibrant they are
+colorspace = "lch"
+
+[templates]
+# Waybar colors
+waybar.template = "colors-waybar.css"
+waybar.target = "~/.config/waybar/wallust/colors-waybar.css"
+
+# Rofi colors
+rofi.template = "colors-rofi.rasi"
+rofi.target = "~/.config/rofi/wallust/colors-rofi.rasi"
+
+# Hyprland colors (borders etc.)
+hyprland.template = "colors-hyprland.conf"
+hyprland.target = "~/.config/hypr/wallust/wallust-hyprland.conf"
+
+# Kitty colors
+kitty.template = "colors-kitty.conf"
+kitty.target = "~/.config/kitty/wallust-colors.conf"

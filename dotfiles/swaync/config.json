@@ -1,0 +1,97 @@
+{
+    "positionX": "right",
+    "positionY": "top",
+    "layer": "overlay",
+    "layer-shell": true,
+    "cssPriority": "application",
+    "control-center-layer": "top",
+    "control-center-positionX": "right",
+    "control-center-positionY": "top",
+    "control-center-width": 380,
+    "control-center-height": 0,
+    "control-center-margin-top": 8,
+    "control-center-margin-bottom": 8,
+    "control-center-margin-right": 8,
+    "control-center-margin-left": 0,
+    "notification-icon-size": 32,
+    "notification-body-image-height": 200,
+    "notification-body-image-width": 200,
+    "notification-window-width": 380,
+    "timeout": 6,
+    "timeout-low": 3,
+    "timeout-critical": 0,
+    "fit-to-screen": false,
+    "relative-timestamps": true,
+    "image-visibility": "when-available",
+    "transition-time": 200,
+    "hide-on-clear": false,
+    "hide-on-action": true,
+    "script-fail-notify": true,
+    "keyboard-shortcuts": true,
+    "widgets": [
+        "title",
+        "dnd",
+        "buttons-grid",
+        "volume",
+        "backlight",
+        "mpris",
+        "notifications"
+    ],
+    "widget-config": {
+        "title": {
+            "text": "Control Center",
+            "clear-all-button": true,
+            "button-text": "Clear All"
+        },
+        "dnd": {
+            "text": "Do Not Disturb"
+        },
+        "buttons-grid": {
+            "actions": [
+                {
+                    "label": "\udb82\udd28",
+                    "command": "nm-connection-editor",
+                    "type": "normal"
+                },
+                {
+                    "label": "\udb80\udcaf",
+                    "command": "blueman-manager",
+                    "type": "normal"
+                },
+                {
+                    "label": "\udb81\udd7e",
+                    "command": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+                    "type": "toggle",
+                    "update-command": "wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q MUTED && echo true || echo false",
+                    "active": false
+                },
+                {
+                    "label": "\udb80\udf6c",
+                    "command": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
+                    "type": "toggle",
+                    "update-command": "wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q MUTED && echo true || echo false",
+                    "active": false
+                },
+                {
+                    "label": "\udb81\udc25",
+                    "command": "~/.config/hypr/scripts/powermenu.sh",
+                    "type": "normal"
+                }
+            ]
+        },
+        "volume": {
+            "label": "\udb81\udd7e",
+            "show-per-app": false
+        },
+        "backlight": {
+            "label": "\udb80\udcde",
+            "device": "intel_backlight",
+            "min": 1
+        },
+        "mpris": {
+            "image-size": 56,
+            "image-radius": 10,
+            "player": "playerctld"
+        }
+    }
+}

@@ -1,0 +1,160 @@
+/* ══════════════════════════════════════════════════════════════════
+   LAUNCHER.RASI — drops from Waybar island, wallust dynamic colors
+   ══════════════════════════════════════════════════════════════════ */
+
+@import "/home/arclen/.config/rofi/wallust/colors-rofi.rasi"
+
+* {
+    text-color: @foreground;
+    border:     0;
+    margin:     0;
+    padding:    0;
+    spacing:    0;
+}
+
+/* ── Window ───────────────────────────────────────────────────────── */
+window {
+    location:         north;
+    anchor:           north;
+    x-offset:         0;
+    y-offset:         52px;
+    width:            480px;
+    background-color: @background;
+    border:           1px solid;
+    border-color:     @selected;
+    border-radius:    18px;
+    padding:          0;
+}
+
+/* ── Mainbox ──────────────────────────────────────────────────────── */
+mainbox {
+    background-color: @background;
+    padding:          12px;
+    spacing:          8px;
+    children:         [ inputbar, listview, mode-switcher ];
+}
+
+/* ── Inputbar ─────────────────────────────────────────────────────── */
+inputbar {
+    background-color: @background-alt;
+    border:           1px solid;
+    border-color:     @selected;
+    border-radius:    12px;
+    padding:          10px 14px;
+    spacing:          10px;
+    children:         [ prompt, entry ];
+}
+
+prompt {
+    background-color: @background-alt;
+    text-color:       @selected;
+    font:             "Inter Bold 12";
+    vertical-align:   0.5;
+}
+
+entry {
+    background-color: @background-alt;
+    text-color:       @foreground;
+    placeholder:      "Search...";
+    placeholder-color: @foreground;
+    cursor:           text;
+    vertical-align:   0.5;
+}
+
+/* ── Listview ─────────────────────────────────────────────────────── */
+listview {
+    background-color: @background;
+    columns:          1;
+    lines:            8;
+    scrollbar:        false;
+    spacing:          2px;
+    fixed-height:     false;
+    dynamic:          true;
+}
+
+/* ── Elements ────────────────────────────────────────────────────── */
+element {
+    background-color: @background;
+    border-radius:    10px;
+    padding:          6px 10px;
+    spacing:          10px;
+    orientation:      horizontal;
+    children:         [ element-icon, element-text ];
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: @background;
+    text-color:       @foreground;
+}
+
+element selected.normal {
+    background-color: @selected;
+    text-color:       @foreground;
+}
+
+element normal.urgent,
+element alternate.urgent {
+    background-color: @background;
+    text-color:       @urgent;
+}
+
+element selected.urgent {
+    background-color: @urgent;
+    text-color:       @foreground;
+}
+
+element normal.active,
+element alternate.active {
+    background-color: @background;
+    text-color:       @active;
+}
+
+element selected.active {
+    background-color: @active;
+    text-color:       @foreground;
+}
+
+element-icon {
+    background-color: inherit;
+    size:             28px;
+    vertical-align:   0.5;
+}
+
+element-text {
+    background-color: inherit;
+    text-color:       inherit;
+    vertical-align:   0.5;
+}
+
+/* ── Mode switcher ───────────────────────────────────────────────── */
+mode-switcher {
+    background-color: @background;
+    spacing:          6px;
+    padding:          4px 0 0 0;
+}
+
+button {
+    background-color: @background-alt;
+    text-color:       @foreground;
+    border-radius:    8px;
+    padding:          5px 14px;
+    font:             "Inter 11";
+}
+
+button selected {
+    background-color: @selected;
+    text-color:       @foreground;
+}
+
+/* ── Message ─────────────────────────────────────────────────────── */
+message {
+    background-color: @background;
+    padding:          4px 0;
+}
+
+textbox {
+    background-color: @background;
+    text-color:       @urgent;
+    font:             "Inter 11";
+}

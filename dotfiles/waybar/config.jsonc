@@ -1,0 +1,120 @@
+// -*- mode: jsonc -*-
+{
+    // ─── Bar Layout ──────────────────────────────────────────────────
+    "layer": "top",
+    "position": "top",
+    "exclusive": true,
+    "passthrough": false,
+    "margin-top": 8,
+    "margin-left": 450,
+    "margin-right": 450,
+    "spacing": 0,
+
+    // ─── All modules in center — pill auto-sizes to content ──────────
+    "modules-left": [],
+    "modules-center": [
+        "hyprland/workspaces",
+        "clock",
+        "mpris",
+        "pulseaudio",
+        "network",
+        "tray"
+    ],
+    "modules-right": [],
+
+    // ─── Workspaces ──────────────────────────────────────────────────
+    "hyprland/workspaces": {
+        "disable-scroll": true,
+        "all-outputs": true,
+        "warp-on-scroll": false,
+        "format": "{name}",
+        "on-click": "activate",
+        "persistent-workspaces": {
+            "*": 4
+        }
+    },
+
+    // ─── Clock (12hr) ────────────────────────────────────────────────
+    "clock": {
+        "format": "  {:%I:%M %p}",
+        "format-alt": "  {:%a, %d %b %Y}",
+        "tooltip-format": "<tt>{calendar}</tt>",
+        "calendar": {
+            "mode": "month",
+            "on-scroll": 1,
+            "format": {
+                "months":   "<span color='#89b4fa'><b>{}</b></span>",
+                "days":     "<span>{}</span>",
+                "weeks":    "<span color='#89dceb'>W{}</span>",
+                "weekdays": "<span color='#cba6f7'><b>{}</b></span>",
+                "today":    "<span color='#f38ba8'><b><u>{}</u></b></span>"
+            }
+        }
+    },
+
+    // ─── Media (MPRIS) ───────────────────────────────────────────────
+    "mpris": {
+        "format": " {title}",
+        "format-paused": "󰏤 {title}",
+        "format-stopped": "",
+        "title-len": 20,
+        "dynamic-order": ["title"],
+        "player-icons": {
+            "default":  "",
+            "spotify":  "",
+            "firefox":  "",
+            "mpv":      "󰐹",
+            "vlc":      "󰕼"
+        },
+        "status-icons": {
+            "paused":  "󰏤",
+            "playing": "",
+            "stopped": ""
+        },
+        "on-click": "playerctl play-pause",
+        "on-click-right": "playerctl next",
+        "on-scroll-up": "playerctl next",
+        "on-scroll-down": "playerctl previous",
+        "tooltip-format": "{player_icon}  {title}\n󰎈  {artist}\n󰀥  {album}"
+    },
+
+    // ─── Audio ───────────────────────────────────────────────────────
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "󰝟",
+        "format-icons": {
+            "headphone":  "",
+            "headset":    "",
+            "default":   ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%-",
+        "tooltip-format": "󰋋  {desc}"
+    },
+
+    // ─── Network ─────────────────────────────────────────────────────
+    "network": {
+        "format-wifi": "󰤨 {essid}",
+        "format-ethernet": "󰈀 Wired",
+        "format-disconnected": "󰤭",
+        "tooltip-format-wifi": "󰤨  {essid}\n  {ipaddr}\n󰓅  {signalStrength}%",
+        "tooltip-format-ethernet": "󰈀  {ifname}\n  {ipaddr}",
+        "tooltip-format-disconnected": "󰤭  No connection"
+    },
+
+    // ─── Tray ────────────────────────────────────────────────────────
+    "tray": {
+        "icon-size": 16,
+        "spacing": 8,
+        "show-passive-items": true
+    }
+
+    // "wlr/taskbar": {
+    //     "format": "{icon}",
+    //     "icon-size": 18,
+    //     "tooltip-format": "{title}",
+    //     "on-click": "activate",
+    //     "on-click-middle": "close"
+    // }
+}
