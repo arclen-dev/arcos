@@ -77,28 +77,12 @@ read -rp "  Is this correct? [Y/n]: " CONFIRM_USER
 CONFIRM_USER="${CONFIRM_USER,,}"
 [[ "$CONFIRM_USER" == "n" ]] && error "Please run the installer as the correct user."
 
-# Swap / hibernate
-echo ""
-info "Detecting swap partition for hibernate support..."
-DETECTED_SWAP_UUID=""
-SWAP_PART=$(lsblk -o NAME,FSTYPE | grep swap | awk '{print $1}' | head -1)
-if [[ -n "$SWAP_PART" ]]; then
-    DETECTED_SWAP_UUID=$(lsblk -o NAME,UUID,FSTYPE | grep swap | awk '{print $2}' | head -1)
-    echo -e "  ${GREEN}Found swap:${RESET} /dev/$SWAP_PART (UUID: $DETECTED_SWAP_UUID)"
-    read -rp "  Enable hibernate with this swap? [Y/n]: " ENABLE_HIBERNATE
-    ENABLE_HIBERNATE="${ENABLE_HIBERNATE,,}"
-else
-    warn "No swap partition detected. Hibernate will be skipped."
-    ENABLE_HIBERNATE="n"
-fi
 
 # Summary
 echo -e "\n${BOLD}━━━ Install Summary ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 echo -e "  User:        $USER"
 echo -e "  GPU:         $GPU"
 echo -e "  Laptop:      $IS_LAPTOP"
-echo -e "  Hibernate:   $ENABLE_HIBERNATE"
-echo -e "  Swap UUID:   ${DETECTED_SWAP_UUID:-none}"
 echo ""
 read -rp "  Looks good? Press Enter to begin or Ctrl+C to cancel... "
 
@@ -154,6 +138,18 @@ esac
 info "Installing all packages (this may take a while)..."
 yay -S --needed --noconfirm $PKGS
 success "All packages installed"
+
+# ── Step 3b: sddm-silent-theme ────────────────────────────────────────────────
+# Installed separately AFTER sddm to avoid conflicts during bulk install
+step "Installing SDDM silent theme"
+
+if ! pacman -Qq sddm-silent-theme &>/dev/null; then
+    info "Installing sddm-silent-theme..."
+    yay -S --needed --noconfirm sddm-silent-theme
+    success "sddm-silent-theme installed"
+else
+    success "sddm-silent-theme already installed"
+fi
 
 # ── Step 4: Inter font ────────────────────────────────────────────────────────
 step "Installing Inter font"
@@ -311,48 +307,7 @@ step "Setting up XDG user directories"
 xdg-user-dirs-update --force
 success "XDG user dirs created (Desktop, Downloads, Documents, Music, Pictures, Videos)"
 
-# ── Step 12: Hibernate setup ──────────────────────────────────────────────────
-step "Hibernate setup"
-
-if [[ "$ENABLE_HIBERNATE" == "y" && -n "$DETECTED_SWAP_UUID" ]]; then
-    info "Configuring hibernate with swap UUID: $DETECTED_SWAP_UUID"
-
-    if [[ -d /boot/loader/entries ]]; then
-        BOOT_ENTRY=$(ls /boot/loader/entries/*.conf 2>/dev/null | head -1)
-        if [[ -n "$BOOT_ENTRY" ]]; then
-            if ! grep -q "resume=UUID=" "$BOOT_ENTRY"; then
-                sudo sed -i "s/^options /options resume=UUID=$DETECTED_SWAP_UUID /" "$BOOT_ENTRY"
-                success "resume= added to systemd-boot entry"
-            else
-                success "resume= already present in boot entry"
-            fi
-        fi
-    elif [[ -f /etc/default/grub ]]; then
-        if ! grep -q "resume=UUID=" /etc/default/grub; then
-            sudo sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"/GRUB_CMDLINE_LINUX_DEFAULT=\"resume=UUID=$DETECTED_SWAP_UUID /" /etc/default/grub
-            sudo grub-mkconfig -o /boot/grub/grub.cfg
-            success "resume= added to GRUB config"
-        else
-            success "resume= already present in GRUB config"
-        fi
-    else
-        warn "Unknown bootloader — skipping bootloader modification"
-    fi
-
-    # Add resume hook to mkinitcpio
-    if ! grep -q "resume" /etc/mkinitcpio.conf; then
-        sudo sed -i 's/\(HOOKS=([^)]*filesystems\)/\1 resume/' /etc/mkinitcpio.conf
-        success "resume hook added to mkinitcpio"
-        sudo mkinitcpio -P
-        success "initramfs rebuilt"
-    else
-        success "resume hook already present in mkinitcpio"
-    fi
-else
-    info "Skipping hibernate setup"
-fi
-
-# ── Step 13: Enable services ──────────────────────────────────────────────────
+# ── Step 12: Enable services ──────────────────────────────────────────────────
 step "Enabling services"
 
 sudo systemctl enable sddm
@@ -369,7 +324,7 @@ if [[ "$IS_LAPTOP" == "y" ]]; then
     success "bluetooth enabled"
 fi
 
-# ── Step 14: Set ZSH as default shell ─────────────────────────────────────────
+# ── Step 13: Set ZSH as default shell ─────────────────────────────────────────
 step "Setting ZSH as default shell"
 
 ZSH_PATH="$(which zsh)"
@@ -380,7 +335,7 @@ else
     success "ZSH is already the default shell"
 fi
 
-# ── Step 15: Initial wallust run ──────────────────────────────────────────────
+# ── Step 14: Initial wallust run ──────────────────────────────────────────────
 step "Running initial wallust"
 
 FIRST_WALLPAPER=$(find "$HOME/Pictures/Wallpapers" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" \) | head -1)
@@ -393,13 +348,13 @@ else
     warn "No wallpapers found in ~/Pictures/Wallpapers — wallust skipped"
 fi
 
-# ── Step 16: Timeshift setup ──────────────────────────────────────────────────
+# ── Step 15: Timeshift setup ──────────────────────────────────────────────────
 step "Setting up Timeshift"
 
 sudo systemctl enable --now cronie 2>/dev/null || true
 info "Timeshift installed. Configure your first snapshot after reboot via: timeshift-gtk"
 
-# ── Step 17: Pacman cache cleanup ─────────────────────────────────────────────
+# ── Step 16: Pacman cache cleanup ─────────────────────────────────────────────
 step "Cleaning up"
 
 paccache -rk2 2>/dev/null || true
@@ -422,7 +377,7 @@ echo -e "${RESET}"
 echo -e "${BOLD}  Keybinds cheatsheet:${RESET}"
 echo -e "  ${CYAN}Super + Enter${RESET}       Terminal (kitty)"
 echo -e "  ${CYAN}Super + Space${RESET}       App launcher (rofi)"
-echo -e "  ${CYAN}Super + E${RESET}           File manager (Thunar)"
+echo -e "  ${CYAN}Super + E${RESET}           File manager (Nemo)"
 echo -e "  ${CYAN}Super + W${RESET}           Wallpaper picker"
 echo -e "  ${CYAN}Super + Shift+W${RESET}     Toggle dark/light mode"
 echo -e "  ${CYAN}Super + L${RESET}           Lock screen"
@@ -435,3 +390,9 @@ echo -e "  ${CYAN}Print${RESET}               Screenshot (region)"
 echo ""
 echo -e "${YELLOW}${BOLD}  ⚠  Please reboot to complete the setup.${RESET}"
 echo -e "     ${BOLD}sudo reboot${RESET}\n"
+echo -e "${YELLOW}${BOLD}  ⚠  After first reboot, things may not work perfectly — do a second reboot.${RESET}\n"
+echo -e "${CYAN}${BOLD}  📺  Set your resolution, refresh rate and scaling:${RESET}"
+echo -e "     Edit ${BOLD}~/.config/hypr/monitor.conf${RESET}"
+echo -e "     Example: ${BOLD}monitor=DP-1,1920x1080@60,0x0,1${RESET}"
+echo -e "     Format:  ${BOLD}monitor=NAME,RESxRES@HZ,POSITIONxPOSITION,SCALE${RESET}"
+echo -e "     Run ${BOLD}hyprctl monitors${RESET} after reboot to find your monitor name.\n"

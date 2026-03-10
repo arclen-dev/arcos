@@ -7,6 +7,7 @@ base-devel
 git
 zsh
 nano
+kitty
 
 # ── Hyprland ────────────────────────────────────────────────────────────
 hyprland
@@ -60,20 +61,18 @@ noto-fonts-emoji
 
 # ── Applications ─────────────────────────────────────────────────────────
 brave-bin
-thunar
-thunar-archive-plugin
+nemo
 xarchiver
 mpv
 gnome-calculator
 btop
 fastfetch
 fresh-editor-bin
-pamac-aur
+geany
 
 # ── System ───────────────────────────────────────────────────────────────
 polkit-gnome
 sddm
-sddm-silent-theme
 xdg-user-dirs
 libnotify
 timeshift
