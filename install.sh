@@ -11,15 +11,59 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+WHITE='\033[1;37m'
+DIM='\033[2m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
+# ── Step tracking ─────────────────────────────────────────────────────────────
+TOTAL_STEPS=16
+CURRENT_STEP=0
+INSTALL_START=$(date +%s)
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
-info()    { echo -e "${CYAN}${BOLD}[ArcOS]${RESET} $*"; }
-success() { echo -e "${GREEN}${BOLD}[ ✔ ]${RESET} $*"; }
-warn()    { echo -e "${YELLOW}${BOLD}[ ! ]${RESET} $*"; }
-error()   { echo -e "${RED}${BOLD}[ ✘ ]${RESET} $*"; exit 1; }
-step()    { echo -e "\n${BOLD}━━━ $* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"; }
+info()    { echo -e "  ${CYAN}${BOLD}➜${RESET}  $*"; }
+success() { echo -e "  ${GREEN}${BOLD}✔${RESET}  $*"; }
+warn()    { echo -e "  ${YELLOW}${BOLD}!${RESET}  ${YELLOW}$*${RESET}"; }
+error()   { echo -e "\n  ${RED}${BOLD}✘  ERROR:${RESET} $*\n"; exit 1; }
+
+step() {
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+    local title="$*"
+    local progress="Step ${CURRENT_STEP}/${TOTAL_STEPS}"
+    local width=54
+    local content="  ${progress} — ${title}  "
+    local pad=$(( (width - ${#content}) / 2 ))
+    local padstr=""
+    for ((i=0; i<pad; i++)); do padstr="${padstr} "; done
+    echo ""
+    echo -e "  ${CYAN}┌──────────────────────────────────────────────────────┐${RESET}"
+    echo -e "  ${CYAN}│${RESET}${padstr}${BOLD}${WHITE}${progress} — ${title}${RESET}${padstr}${CYAN}│${RESET}"
+    echo -e "  ${CYAN}└──────────────────────────────────────────────────────┘${RESET}"
+}
+
+box() {
+    local msg="$*"
+    echo -e "  ${DIM}┌──────────────────────────────────────────────────────┐${RESET}"
+    echo -e "  ${DIM}│${RESET}  $msg"
+    echo -e "  ${DIM}└──────────────────────────────────────────────────────┘${RESET}"
+}
+
+# Spinner for long-running commands
+spinner() {
+    local pid=$1
+    local msg="${2:-Working...}"
+    local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+    local i=0
+    while kill -0 "$pid" 2>/dev/null; do
+        printf "\r  ${CYAN}${frames[$((i % 10))]}${RESET}  ${DIM}%s${RESET}" "$msg"
+        sleep 0.1
+        i=$((i + 1))
+    done
+    printf "\r%-60s\r" " "
+}
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -27,6 +71,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 clear
 echo -e "${CYAN}${BOLD}"
 cat << 'EOF'
+
     ___             ____  _____
    /   |  __________/ __ \/ ___/
   / /| | / ___/ ___/ / / /\__ \
@@ -34,55 +79,143 @@ cat << 'EOF'
 /_/  |_/_/   \___/\____//____/
 
 EOF
-echo -e "${RESET}${BOLD}  Hyprland rice installer by arclen-dev${RESET}"
-echo -e "  github.com/arclen-dev/arcos\n"
+echo -e "${RESET}"
+echo -e "  ${WHITE}${BOLD}Hyprland rice installer${RESET}  ${DIM}by arclen-dev${RESET}"
+echo -e "  ${DIM}github.com/arclen-dev/arcos${RESET}"
+echo -e "  ${DIM}────────────────────────────────────────${RESET}\n"
 
 # ── Step 0: Pre-flight checks ─────────────────────────────────────────────────
-step "Pre-flight checks"
+echo -e "  ${CYAN}${BOLD}Running pre-flight checks...${RESET}\n"
 
+# Not root
 [[ "$EUID" -eq 0 ]] && error "Do not run as root. Run as your normal user."
-[[ -f /etc/arch-release ]] || error "This installer is for Arch Linux only."
+success "Running as user: ${BOLD}$USER${RESET}"
 
+# Arch Linux
+[[ -f /etc/arch-release ]] || error "This installer is for Arch Linux only."
+success "Arch Linux detected"
+
+# sudo access
+if ! sudo -v &>/dev/null; then
+    error "User $USER does not have sudo access. Add yourself to the sudoers file first."
+fi
+success "sudo access confirmed"
+
+# git installed
+if ! command -v git &>/dev/null; then
+    info "git not found — installing..."
+    sudo pacman -S --noconfirm git || error "Failed to install git."
+fi
+success "git available"
+
+# Internet check
 info "Checking internet connection..."
-ping -c 1 archlinux.org &>/dev/null || error "No internet connection detected."
+INET_OK=false
+for host in archlinux.org 8.8.8.8 1.1.1.1; do
+    if ping -c 1 -W 2 "$host" &>/dev/null; then
+        INET_OK=true
+        break
+    fi
+done
+[[ "$INET_OK" == true ]] || error "No internet connection detected. Check your network and try again."
 success "Internet OK"
 
-# ── Step 1: Ask all questions upfront ────────────────────────────────────────
-step "Configuration"
+# Disk space — warn if less than 10GB free
+FREE_GB=$(df -BG / | awk 'NR==2 {gsub("G",""); print $4}')
+if [[ "$FREE_GB" -lt 10 ]]; then
+    warn "Only ${FREE_GB}GB free on /. Recommended: 10GB+. Proceeding anyway..."
+else
+    success "Disk space OK (${FREE_GB}GB free)"
+fi
 
-echo -e "\n${BOLD}Please answer the following questions. The install will then run unattended.\n${RESET}"
+# GPU detection
+info "Detecting GPU..."
+GPU_DETECTED=""
+GPU_NAME=""
+if lspci 2>/dev/null | grep -qi "nvidia"; then
+    GPU_DETECTED="nvidia"
+    GPU_NAME=$(lspci | grep -i nvidia | head -1 | sed 's/.*: //')
+elif lspci 2>/dev/null | grep -qi "amd\|radeon"; then
+    GPU_DETECTED="amd"
+    GPU_NAME=$(lspci | grep -iE "amd|radeon" | head -1 | sed 's/.*: //')
+elif lspci 2>/dev/null | grep -qi "intel.*graphics\|intel.*vga"; then
+    GPU_DETECTED="intel"
+    GPU_NAME=$(lspci | grep -iE "intel.*graphics|intel.*vga" | head -1 | sed 's/.*: //')
+fi
+
+if [[ -n "$GPU_DETECTED" ]]; then
+    success "GPU detected: ${BOLD}$GPU_NAME${RESET}"
+else
+    warn "Could not auto-detect GPU. You will be asked manually."
+fi
+
+echo ""
+
+# ── Step 1: Ask all questions upfront ────────────────────────────────────────
+echo -e "  ${CYAN}${BOLD}Configuration${RESET}\n"
+echo -e "  ${DIM}Answer the following. The install will then run unattended.${RESET}\n"
 
 # GPU
-echo -e "  ${BOLD}[1] GPU type:${RESET}"
-echo "      1) Intel"
-echo "      2) AMD"
-echo "      3) NVIDIA"
-read -rp "  Choice [1/2/3]: " GPU_CHOICE
-case "$GPU_CHOICE" in
-    1) GPU="intel"  ;;
-    2) GPU="amd"    ;;
-    3) GPU="nvidia" ;;
-    *) error "Invalid GPU choice." ;;
-esac
+echo -e "  ${BOLD}[1] GPU type${RESET}"
+if [[ -n "$GPU_DETECTED" ]]; then
+    echo -e "      ${DIM}Auto-detected:${RESET} ${GREEN}${GPU_NAME}${RESET}"
+    echo -e "      1) Use detected ${DIM}(${GPU_DETECTED})${RESET}"
+    echo -e "      2) Intel"
+    echo -e "      3) AMD"
+    echo -e "      4) NVIDIA"
+    read -rp "      Choice [1/2/3/4, default=1]: " GPU_CHOICE
+    GPU_CHOICE="${GPU_CHOICE:-1}"
+    case "$GPU_CHOICE" in
+        1) GPU="$GPU_DETECTED" ;;
+        2) GPU="intel"  ;;
+        3) GPU="amd"    ;;
+        4) GPU="nvidia" ;;
+        *) warn "Invalid choice, using auto-detected: $GPU_DETECTED"; GPU="$GPU_DETECTED" ;;
+    esac
+else
+    echo -e "      1) Intel"
+    echo -e "      2) AMD"
+    echo -e "      3) NVIDIA"
+    while true; do
+        read -rp "      Choice [1/2/3]: " GPU_CHOICE
+        case "$GPU_CHOICE" in
+            1) GPU="intel";  break ;;
+            2) GPU="amd";    break ;;
+            3) GPU="nvidia"; break ;;
+            *) warn "Invalid choice. Please enter 1, 2 or 3." ;;
+        esac
+    done
+fi
 
 # Laptop
 echo ""
-read -rp "  ${BOLD}[2] Is this a laptop? (enables bluetooth) [y/N]:${RESET} " IS_LAPTOP
+echo -e "  ${BOLD}[2] Is this a laptop?${RESET} ${DIM}(installs power management, touchpad, backlight tools)${RESET}"
+read -rp "      [y/N]: " IS_LAPTOP
 IS_LAPTOP="${IS_LAPTOP,,}"
+
+# Bluetooth
+echo ""
+echo -e "  ${BOLD}[3] Install and enable Bluetooth?${RESET} ${DIM}(bluez, bluez-utils, blueman)${RESET}"
+read -rp "      [y/N]: " INSTALL_BT
+INSTALL_BT="${INSTALL_BT,,}"
 
 # Username confirm
 echo ""
-echo -e "  ${BOLD}[3] Detected username:${RESET} $USER"
-read -rp "  Is this correct? [Y/n]: " CONFIRM_USER
+echo -e "  ${BOLD}[4] Detected username:${RESET} ${GREEN}${BOLD}$USER${RESET}"
+read -rp "      Is this correct? [Y/n]: " CONFIRM_USER
 CONFIRM_USER="${CONFIRM_USER,,}"
 [[ "$CONFIRM_USER" == "n" ]] && error "Please run the installer as the correct user."
 
-
-# Summary
-echo -e "\n${BOLD}━━━ Install Summary ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "  User:        $USER"
-echo -e "  GPU:         $GPU"
-echo -e "  Laptop:      $IS_LAPTOP"
+# Summary box
+echo ""
+echo -e "  ${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Install Summary${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}─────────────────────────────────────────────────────${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}User  ${RESET}   ${BOLD}$USER${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}GPU   ${RESET}   ${BOLD}$GPU${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}Laptop   ${RESET}${BOLD}${IS_LAPTOP:-n}${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}Bluetooth${RESET} ${BOLD}${INSTALL_BT:-n}${RESET}"
+echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
 echo ""
 read -rp "  Looks good? Press Enter to begin or Ctrl+C to cancel... "
 
@@ -99,8 +232,12 @@ if ! grep -q "chaotic-aur" /etc/pacman.conf 2>/dev/null; then
         'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
     echo -e "\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist" \
         | sudo tee -a /etc/pacman.conf > /dev/null
+    info "Sorting Chaotic AUR mirrors by speed..."
+    sudo pacman -S --noconfirm rate-mirrors 2>/dev/null || true
+    rate-mirrors --allow-root chaotic-aur 2>/dev/null | sudo tee /etc/pacman.d/chaotic-mirrorlist > /dev/null || \
+        warn "Mirror sorting failed — using default mirrorlist"
     sudo pacman -Sy
-    success "Chaotic AUR configured"
+    success "Chaotic AUR configured with fastest mirrors"
 else
     success "Chaotic AUR already configured"
 fi
@@ -119,23 +256,28 @@ step "Installing packages"
 
 PKGS=$(grep -v '^#' "$REPO_DIR/packages.txt" | grep -v '^$' | tr '\n' ' ')
 
-# GPU-specific packages
+# GPU-specific packages — pulled from official Arch wiki / driver pages
 case "$GPU" in
     intel)
-        PKGS="$PKGS intel-media-driver intel-ucode vulkan-intel libva-intel-driver"
+        GPU_PKGS="mesa intel-media-driver vulkan-intel libva-intel-driver"
         ;;
     amd)
-        PKGS="$PKGS amd-ucode vulkan-radeon libva-mesa-driver"
+        GPU_PKGS="mesa vulkan-radeon libva-mesa-driver amdvlk"
         ;;
     nvidia)
-        PKGS="$PKGS nvidia nvidia-utils nvidia-settings"
+        GPU_PKGS="nvidia nvidia-utils nvidia-settings libva-nvidia-driver"
         ;;
 esac
+info "GPU driver packages for ${BOLD}$GPU${RESET}: $GPU_PKGS"
+PKGS="$PKGS $GPU_PKGS"
 
-# Laptop: add bluetooth
-[[ "$IS_LAPTOP" == "y" ]] && PKGS="$PKGS bluez bluez-utils blueman"
+# Bluetooth (asked separately, works for any machine)
+[[ "$INSTALL_BT" == "y" ]] && PKGS="$PKGS bluez bluez-utils blueman"
 
-info "Installing all packages (this may take a while)..."
+# Laptop-specific packages: power management, touchpad, backlight
+[[ "$IS_LAPTOP" == "y" ]] && PKGS="$PKGS tlp tlp-rdw acpi acpid brightnessctl xf86-input-libinput"
+
+info "Installing all packages — this will take a while, grab a coffee ☕"
 yay -S --needed --noconfirm $PKGS
 success "All packages installed"
 
@@ -319,9 +461,15 @@ success "NetworkManager enabled"
 systemctl --user enable --now playerctld 2>/dev/null || true
 success "playerctld enabled"
 
-if [[ "$IS_LAPTOP" == "y" ]]; then
+if [[ "$INSTALL_BT" == "y" ]]; then
     sudo systemctl enable bluetooth
     success "bluetooth enabled"
+fi
+
+if [[ "$IS_LAPTOP" == "y" ]]; then
+    sudo systemctl enable tlp
+    sudo systemctl enable acpid
+    success "laptop power management enabled (tlp, acpid)"
 fi
 
 # ── Step 13: Set ZSH as default shell ─────────────────────────────────────────
@@ -345,7 +493,8 @@ if [[ -n "$FIRST_WALLPAPER" ]]; then
     echo "$FIRST_WALLPAPER" > "$HOME/.cache/wallust/wallpaper"
     success "wallust initialized with: $(basename "$FIRST_WALLPAPER")"
 else
-    warn "No wallpapers found in ~/Pictures/Wallpapers — wallust skipped"
+    warn "No wallpapers found in ~/Pictures/Wallpapers — run manually after reboot:"
+    warn "  wallust run ~/Pictures/Wallpapers/yourwallpaper.jpg"
 fi
 
 # ── Step 15: Timeshift setup ──────────────────────────────────────────────────
@@ -362,37 +511,54 @@ rm -rf /tmp/arcos-* 2>/dev/null || true
 success "Cache cleaned"
 
 # ── Done ──────────────────────────────────────────────────────────────────────
+INSTALL_END=$(date +%s)
+INSTALL_DURATION=$(( (INSTALL_END - INSTALL_START) / 60 ))
+
 clear
 echo -e "${CYAN}${BOLD}"
 cat << 'EOF'
+
     ___             ____  _____
    /   |  __________/ __ \/ ___/
   / /| | / ___/ ___/ / / /\__ \
  / ___ |/ /  / /__/ /_/ /___/ /
 /_/  |_/_/   \___/\____//____/
 
-         Install complete!
 EOF
 echo -e "${RESET}"
-echo -e "${BOLD}  Keybinds cheatsheet:${RESET}"
-echo -e "  ${CYAN}Super + Enter${RESET}       Terminal (kitty)"
-echo -e "  ${CYAN}Super + Space${RESET}       App launcher (rofi)"
-echo -e "  ${CYAN}Super + E${RESET}           File manager (Nemo)"
-echo -e "  ${CYAN}Super + W${RESET}           Wallpaper picker"
-echo -e "  ${CYAN}Super + Shift+W${RESET}     Toggle dark/light mode"
-echo -e "  ${CYAN}Super + L${RESET}           Lock screen"
-echo -e "  ${CYAN}Super + X${RESET}           Power menu"
-echo -e "  ${CYAN}Super + N${RESET}           Notification center"
-echo -e "  ${CYAN}Super + V${RESET}           Clipboard history"
-echo -e "  ${CYAN}Super + .${RESET}           Emoji picker"
-echo -e "  ${CYAN}Super + Q${RESET}           Close window"
-echo -e "  ${CYAN}Print${RESET}               Screenshot (region)"
+echo -e "  ${GREEN}${BOLD}✔  Installation complete!${RESET}  ${DIM}(took ~${INSTALL_DURATION} min)${RESET}"
 echo ""
-echo -e "${YELLOW}${BOLD}  ⚠  Please reboot to complete the setup.${RESET}"
-echo -e "     ${BOLD}sudo reboot${RESET}\n"
-echo -e "${YELLOW}${BOLD}  ⚠  After first reboot, things may not work perfectly — do a second reboot.${RESET}\n"
-echo -e "${CYAN}${BOLD}  📺  Set your resolution, refresh rate and scaling:${RESET}"
-echo -e "     Edit ${BOLD}~/.config/hypr/monitor.conf${RESET}"
-echo -e "     Example: ${BOLD}monitor=DP-1,1920x1080@60,0x0,1${RESET}"
-echo -e "     Format:  ${BOLD}monitor=NAME,RESxRES@HZ,POSITIONxPOSITION,SCALE${RESET}"
-echo -e "     Run ${BOLD}hyprctl monitors${RESET} after reboot to find your monitor name.\n"
+echo -e "  ${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Keybinds${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}─────────────────────────────────────────────────────${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Enter${RESET}      Terminal (kitty)"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Space${RESET}      App launcher (rofi)"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + E${RESET}          File manager (Nemo)"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + W${RESET}          Wallpaper picker"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Shift+W${RESET}    Toggle dark/light mode"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + L${RESET}          Lock screen"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + X${RESET}          Power menu"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + N${RESET}          Notification center"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + V${RESET}          Clipboard history"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + .${RESET}          Emoji picker"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Q${RESET}          Close window"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Print${RESET}              Screenshot (region)"
+echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
+echo ""
+echo -e "  ${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Post-install steps${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}─────────────────────────────────────────────────────${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${YELLOW}1.${RESET} Set your resolution, refresh rate and scaling:"
+echo -e "  ${CYAN}│${RESET}     Edit ${BOLD}~/.config/hypr/monitor.conf${RESET}"
+echo -e "  ${CYAN}│${RESET}     Run ${BOLD}hyprctl monitors${RESET} to find your monitor name"
+echo -e "  ${CYAN}│${RESET}     Example: ${DIM}monitor=DP-1,1920x1080@60,0x0,1${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${YELLOW}2.${RESET} Set up Timeshift snapshots: ${BOLD}timeshift-gtk${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${YELLOW}3.${RESET} Set your wallpaper after reboot:"
+echo -e "  ${CYAN}│${RESET}     Press ${BOLD}Super + W${RESET} to open the wallpaper picker"
+echo -e "  ${CYAN}│${RESET}  ${YELLOW}4.${RESET} On first reboot things may not look perfect —"
+echo -e "  ${CYAN}│${RESET}     ${DIM}do a second reboot if anything looks off${RESET}"
+echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
+echo ""
+echo -e "  ${YELLOW}${BOLD}  ⚠  Reboot now to complete the setup${RESET}"
+echo -e "     ${BOLD}sudo reboot${RESET}"
+echo ""
