@@ -317,17 +317,26 @@ step "Hibernate setup"
 if [[ "$ENABLE_HIBERNATE" == "y" && -n "$DETECTED_SWAP_UUID" ]]; then
     info "Configuring hibernate with swap UUID: $DETECTED_SWAP_UUID"
 
-    # Add resume= to systemd-boot entry
-    BOOT_ENTRY=$(ls /boot/loader/entries/*.conf 2>/dev/null | head -1)
-    if [[ -n "$BOOT_ENTRY" ]]; then
-        if ! grep -q "resume=UUID=" "$BOOT_ENTRY"; then
-            sudo sed -i "s/^options /options resume=UUID=$DETECTED_SWAP_UUID /" "$BOOT_ENTRY"
-            success "resume= added to boot entry: $(basename "$BOOT_ENTRY")"
+    if [[ -d /boot/loader/entries ]]; then
+        BOOT_ENTRY=$(ls /boot/loader/entries/*.conf 2>/dev/null | head -1)
+        if [[ -n "$BOOT_ENTRY" ]]; then
+            if ! grep -q "resume=UUID=" "$BOOT_ENTRY"; then
+                sudo sed -i "s/^options /options resume=UUID=$DETECTED_SWAP_UUID /" "$BOOT_ENTRY"
+                success "resume= added to systemd-boot entry"
+            else
+                success "resume= already present in boot entry"
+            fi
+        fi
+    elif [[ -f /etc/default/grub ]]; then
+        if ! grep -q "resume=UUID=" /etc/default/grub; then
+            sudo sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"/GRUB_CMDLINE_LINUX_DEFAULT=\"resume=UUID=$DETECTED_SWAP_UUID /" /etc/default/grub
+            sudo grub-mkconfig -o /boot/grub/grub.cfg
+            success "resume= added to GRUB config"
         else
-            success "resume= already present in boot entry"
+            success "resume= already present in GRUB config"
         fi
     else
-        warn "No systemd-boot entry found — skipping bootloader modification"
+        warn "Unknown bootloader — skipping bootloader modification"
     fi
 
     # Add resume hook to mkinitcpio
