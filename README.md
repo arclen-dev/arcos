@@ -34,7 +34,7 @@ A clean, minimal Hyprland rice for Arch Linux.
 
 ## Install
 
-> Requires a fresh Arch Linux install with internet access. Do **not** run as root.
+> It is recommended to use a fresh Arch Linux install with internet access, but you can also use a already setup system. Do **not** run as root.
 
 ```bash
 git clone https://github.com/arclen-dev/arcos.git
@@ -97,7 +97,7 @@ Removes all ArcOS dotfiles, optionally restores your previous config backup, rev
 
 ## Wallpapers
 
-Wallpapers are copyright-free and included in `assets/wallpapers/`. Change wallpaper anytime with `Super + W`.
+Wallpapers are included in `assets/wallpapers/`. Change wallpaper anytime with `Super + W`.
 
 Colors across the entire system (bar, terminal, lock screen, launcher) update automatically via wallust when you pick a new wallpaper.
 
