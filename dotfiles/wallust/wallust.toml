@@ -23,3 +23,7 @@ hyprland.target = "~/.config/hypr/wallust/wallust-hyprland.conf"
 # Kitty colors
 kitty.template = "colors-kitty.conf"
 kitty.target = "~/.config/kitty/wallust-colors.conf"
+
+# Geany colors
+geany.template = "colors-geany.conf"
+geany.target = "~/.config/geany/colorschemes/wallust.conf"
