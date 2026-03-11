@@ -45,10 +45,27 @@ chmod +x install.sh
 
 The installer will ask 4 questions (GPU type, laptop y/n, bluetooth y/n, username confirm), then run fully unattended.
 
+**Update dotfiles on an existing system:**
+```bash
+./install.sh --update
+```
+Syncs packages (installs missing, skips existing), re-copies dotfiles, re-applies system configs and wallust. No reinstall needed.
+
 **Reboot after install:**
 ```bash
 sudo reboot
 ```
+
+---
+
+## Uninstall
+
+```bash
+chmod +x uninstall.sh
+./uninstall.sh
+```
+
+Removes all ArcOS dotfiles, optionally restores your previous config backup, reverts shell, and disables installed services.
 
 ---
 
@@ -91,6 +108,7 @@ Colors across the entire system (bar, terminal, lock screen, launcher) update au
 ```
 arcos/
 ├── install.sh          # Main installer
+├── uninstall.sh        # Uninstaller / rollback
 ├── packages.txt        # All packages
 ├── dotfiles/           # ~/.config contents (uploaded directly)
 │   ├── hypr/

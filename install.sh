@@ -4,7 +4,6 @@
 #  github.com/arclen-dev/arcos
 # =============================================================================
 
-set -euo pipefail
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -66,6 +65,28 @@ spinner() {
 }
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ── Mode detection ────────────────────────────────────────────────────────────
+MODE="install"
+[[ "${1:-}" == "--update" ]] && MODE="update"
+
+# ── Install log ───────────────────────────────────────────────────────────────
+LOG_FILE="$HOME/arcos-install.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
+echo "── ArcOS $MODE started at $(date) ──"
+
+# ── Sudo keepalive ────────────────────────────────────────────────────────────
+sudo_keepalive() {
+    while true; do
+        sudo -v
+        sleep 240
+    done &
+    SUDO_KEEPALIVE_PID=$!
+}
+stop_keepalive() {
+    [[ -n "${SUDO_KEEPALIVE_PID:-}" ]] && kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+}
+trap stop_keepalive EXIT
 
 # ── Banner ────────────────────────────────────────────────────────────────────
 clear
@@ -151,9 +172,66 @@ fi
 
 echo ""
 
+# Start sudo keepalive now that sudo is confirmed
+sudo_keepalive
+
 # ── Step 1: Ask all questions upfront ────────────────────────────────────────
 echo -e "  ${CYAN}${BOLD}Configuration${RESET}\n"
-echo -e "  ${DIM}Answer the following. The install will then run unattended.${RESET}\n"
+
+if [[ "$MODE" == "update" ]]; then
+    echo -e "  ${DIM}Update mode — syncs packages, dotfiles and system configs.${RESET}\n"
+    IS_LAPTOP="n"
+    INSTALL_BT="n"
+
+    # GPU — ask with auto-detect, same logic as install mode
+    echo -e "  ${BOLD}[1] GPU type${RESET} ${DIM}(for driver package sync)${RESET}"
+    if [[ -n "$GPU_DETECTED" ]]; then
+        echo -e "      ${DIM}Auto-detected:${RESET} ${GREEN}${GPU_NAME}${RESET}"
+        echo -e "      1) Use detected ${DIM}(${GPU_DETECTED})${RESET}"
+        echo -e "      2) Intel"
+        echo -e "      3) AMD"
+        echo -e "      4) NVIDIA"
+        read -rp "      Choice [1/2/3/4, default=1]: " GPU_CHOICE
+        GPU_CHOICE="${GPU_CHOICE:-1}"
+        case "$GPU_CHOICE" in
+            1) GPU="$GPU_DETECTED" ;;
+            2) GPU="intel"  ;;
+            3) GPU="amd"    ;;
+            4) GPU="nvidia" ;;
+            *) warn "Invalid choice, using auto-detected: $GPU_DETECTED"; GPU="$GPU_DETECTED" ;;
+        esac
+    else
+        echo -e "      1) Intel"
+        echo -e "      2) AMD"
+        echo -e "      3) NVIDIA"
+        while true; do
+            read -rp "      Choice [1/2/3]: " GPU_CHOICE
+            case "$GPU_CHOICE" in
+                1) GPU="intel";  break ;;
+                2) GPU="amd";    break ;;
+                3) GPU="nvidia"; break ;;
+                *) warn "Invalid choice. Please enter 1, 2 or 3." ;;
+            esac
+        done
+    fi
+
+    echo ""
+    echo -e "  ${BOLD}[2] Detected username:${RESET} ${GREEN}${BOLD}$USER${RESET}"
+    read -rp "      Is this correct? [Y/n]: " CONFIRM_USER
+    CONFIRM_USER="${CONFIRM_USER,,}"
+    [[ "$CONFIRM_USER" == "n" ]] && { echo -e "\n  ${RED}${BOLD}✘  ERROR:${RESET} Please run as the correct user.\n"; exit 1; }
+    echo ""
+    echo -e "  ${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
+    echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Update Summary${RESET}"
+    echo -e "  ${CYAN}│${RESET}  ${DIM}─────────────────────────────────────────────────────${RESET}"
+    echo -e "  ${CYAN}│${RESET}  ${DIM}User  ${RESET}   ${BOLD}$USER${RESET}"
+    echo -e "  ${CYAN}│${RESET}  ${DIM}GPU   ${RESET}   ${BOLD}$GPU${RESET}"
+    echo -e "  ${CYAN}│${RESET}  ${DIM}Mode  ${RESET}   ${BOLD}packages (--needed) + dotfiles + system configs${RESET}"
+    echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
+    echo ""
+    read -rp "  Looks good? Press Enter to begin or Ctrl+C to cancel... "
+else
+    echo -e "  ${DIM}Answer the following. The install will then run unattended.${RESET}\n"
 
 # GPU
 echo -e "  ${BOLD}[1] GPU type${RESET}"
@@ -218,6 +296,10 @@ echo -e "  ${CYAN}│${RESET}  ${DIM}Bluetooth${RESET} ${BOLD}${INSTALL_BT:-n}${
 echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
 echo ""
 read -rp "  Looks good? Press Enter to begin or Ctrl+C to cancel... "
+fi # end install-only questions
+
+# ── Steps 2-8: Install only (skipped in update mode) ────────────────────────
+if [[ "$MODE" == "install" ]]; then
 
 # ── Step 2: Chaotic AUR ───────────────────────────────────────────────────────
 step "Setting up Chaotic AUR"
@@ -374,14 +456,36 @@ fi
 step "Backing up existing configs"
 
 BACKUP_DIR="$HOME/.config.bak-arcos-$(date +%Y%m%d-%H%M%S)"
-if [[ -d "$HOME/.config" ]]; then
-    info "Backing up ~/.config to $BACKUP_DIR ..."
-    cp -r "$HOME/.config" "$BACKUP_DIR"
-    success "Config backed up"
-fi
+DOTFILES_TO_COPY=(hypr waybar rofi kitty swaync wallust swayosd btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct)
+info "Backing up only ArcOS-related config folders to $BACKUP_DIR ..."
+mkdir -p "$BACKUP_DIR"
+for folder in "${DOTFILES_TO_COPY[@]}"; do
+    [[ -d "$HOME/.config/$folder" ]] && cp -r "$HOME/.config/$folder" "$BACKUP_DIR/" && success "Backed up $folder"
+done
 
-[[ -f "$HOME/.zshrc" ]]   && cp "$HOME/.zshrc"   "$HOME/.zshrc.bak-arcos"   && success ".zshrc backed up"
+[[ -f "$HOME/.zshrc" ]]    && cp "$HOME/.zshrc"    "$HOME/.zshrc.bak-arcos"    && success ".zshrc backed up"
 [[ -f "$HOME/.p10k.zsh" ]] && cp "$HOME/.p10k.zsh" "$HOME/.p10k.zsh.bak-arcos" && success ".p10k.zsh backed up"
+
+fi # end install-only block
+
+# ── Package sync (update mode only) ──────────────────────────────────────────
+if [[ "$MODE" == "update" ]]; then
+    step "Syncing packages"
+
+    PKGS=$(grep -v '^#' "$REPO_DIR/packages.txt" | grep -v '^$' | tr '\n' ' ')
+
+    case "$GPU" in
+        intel)  GPU_PKGS="mesa intel-media-driver vulkan-intel libva-intel-driver" ;;
+        amd)    GPU_PKGS="mesa vulkan-radeon libva-mesa-driver amdvlk" ;;
+        nvidia) GPU_PKGS="nvidia nvidia-utils nvidia-settings libva-nvidia-driver" ;;
+        *)      GPU_PKGS="" ;;
+    esac
+    [[ -n "$GPU_PKGS" ]] && PKGS="$PKGS $GPU_PKGS"
+
+    info "Installing any missing packages (--needed skips already installed)..."
+    yay -S --needed --noconfirm $PKGS || warn "Some packages failed to install — check log"
+    success "Package sync complete"
+fi
 
 # ── Step 9: Copy dotfiles ─────────────────────────────────────────────────────
 step "Installing dotfiles"
@@ -409,18 +513,9 @@ copy_config "wallust"
 copy_config "swayosd"
 copy_config "btop"
 copy_config "fresh"
-copy_config "geany"
 copy_config "gtk-3.0"
 copy_config "gtk-4.0"
 copy_config "nwg-look"
-
-# Apply GTK theme, icons and cursor silently via gsettings
-gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
-gsettings set org.gnome.desktop.interface icon-theme "Papirus-Dark" 2>/dev/null || true
-gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Classic" 2>/dev/null || true
-gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
-gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
-success "GTK theme, icons and cursor applied"
 
 # ZSH dotfiles
 [[ -f "$REPO_DIR/zsh/.zshrc" ]]   && cp "$REPO_DIR/zsh/.zshrc"   "$HOME/.zshrc"   && success "Copied .zshrc"
@@ -534,7 +629,11 @@ cat << 'EOF'
 
 EOF
 echo -e "${RESET}"
-echo -e "  ${GREEN}${BOLD}✔  Installation complete!${RESET}  ${DIM}(took ~${INSTALL_DURATION} min)${RESET}"
+if [[ "$MODE" == "update" ]]; then
+    echo -e "  ${GREEN}${BOLD}✔  Update complete!${RESET}  ${DIM}(took ~${INSTALL_DURATION} min)${RESET}"
+else
+    echo -e "  ${GREEN}${BOLD}✔  Installation complete!${RESET}  ${DIM}(took ~${INSTALL_DURATION} min)${RESET}"
+fi
 echo ""
 echo -e "  ${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
 echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Keybinds${RESET}"
@@ -566,6 +665,8 @@ echo -e "  ${CYAN}│${RESET}     Press ${BOLD}Super + W${RESET} to open the wal
 echo -e "  ${CYAN}│${RESET}  ${YELLOW}4.${RESET} On first reboot things may not look perfect —"
 echo -e "  ${CYAN}│${RESET}     ${DIM}do a second reboot if anything looks off${RESET}"
 echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
+echo ""
+echo -e "  ${DIM}Install log saved to: ~/arcos-install.log${RESET}"
 echo ""
 echo -e "  ${YELLOW}${BOLD}  ⚠  Reboot now to complete the setup${RESET}"
 echo -e "     ${BOLD}sudo reboot${RESET}"
