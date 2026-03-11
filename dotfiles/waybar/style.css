@@ -59,14 +59,19 @@ window#waybar.hidden {
 }
 
 #workspaces button {
-    padding:          3px 11px;
+    padding:          3px 8px;
     margin:           0 1px;
     background:       transparent;
-    color:            alpha(@foreground, 0.30);
+    color:            alpha(@foreground, 0.55);
     border-radius:    999px;
     font-size:        12px;
     font-weight:      700;
     min-width:        24px;
+    transition:       ease-in-out 0.3s;
+}
+
+#workspaces button.empty {
+    color:            alpha(@foreground, 0.18);
 }
 
 #workspaces button:hover {
@@ -87,9 +92,7 @@ window#waybar.hidden {
     color:        @background;
 }
 
-#workspaces button.occupied {
-    color:        @color7;
-}
+/* .occupied removed — non-empty workspaces use base button color (0.55 opacity) */
 
 /* ═══════════════════════════════════════════════════════════════════
    CLOCK

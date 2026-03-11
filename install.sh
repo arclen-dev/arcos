@@ -413,6 +413,14 @@ copy_config "gtk-3.0"
 copy_config "gtk-4.0"
 copy_config "nwg-look"
 
+# Apply GTK theme, icons and cursor silently via gsettings
+gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
+gsettings set org.gnome.desktop.interface icon-theme "Papirus-Dark" 2>/dev/null || true
+gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Classic" 2>/dev/null || true
+gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
+gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+success "GTK theme, icons and cursor applied"
+
 # ZSH dotfiles
 [[ -f "$REPO_DIR/zsh/.zshrc" ]]   && cp "$REPO_DIR/zsh/.zshrc"   "$HOME/.zshrc"   && success "Copied .zshrc"
 [[ -f "$REPO_DIR/zsh/.p10k.zsh" ]] && cp "$REPO_DIR/zsh/.p10k.zsh" "$HOME/.p10k.zsh" && success "Copied .p10k.zsh"
@@ -497,11 +505,10 @@ else
     warn "  wallust run ~/Pictures/Wallpapers/yourwallpaper.jpg"
 fi
 
-# ── Step 15: Timeshift setup ──────────────────────────────────────────────────
-step "Setting up Timeshift"
+# ── Step 15: Timeshift ────────────────────────────────────────────────────────
+step "Timeshift"
 
-sudo systemctl enable --now cronie 2>/dev/null || true
-info "Timeshift installed. Configure your first snapshot after reboot via: timeshift-gtk"
+info "Timeshift is not installed by default. Install manually if needed: yay -S timeshift"
 
 # ── Step 16: Pacman cache cleanup ─────────────────────────────────────────────
 step "Cleaning up"
@@ -533,7 +540,7 @@ echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Keybinds${RESET}"
 echo -e "  ${CYAN}│${RESET}  ${DIM}─────────────────────────────────────────────────────${RESET}"
 echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Enter${RESET}      Terminal (kitty)"
 echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Space${RESET}      App launcher (rofi)"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + E${RESET}          File manager (Nemo)"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + E${RESET}          File manager (Thunar)"
 echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + W${RESET}          Wallpaper picker"
 echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Shift+W${RESET}    Toggle dark/light mode"
 echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + L${RESET}          Lock screen"

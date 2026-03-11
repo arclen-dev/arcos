@@ -37,20 +37,17 @@ pipewire-jack
 pipewire-pulse
 wireplumber
 playerctl
-pavucontrol
+pwvucontrol
 
 # ── Network ─────────────────────────────────────────────────────────────
 networkmanager
 network-manager-applet
-iwd
 
 # ── Theming ─────────────────────────────────────────────────────────────
 adw-gtk-theme
 bibata-cursor-theme
 papirus-icon-theme
 nwg-look
-kvantum
-qt5ct
 qt6ct
 
 # ── Fonts ────────────────────────────────────────────────────────────────
@@ -61,7 +58,14 @@ noto-fonts-emoji
 
 # ── Applications ─────────────────────────────────────────────────────────
 brave-bin
-nemo
+thunar
+thunar-archive-plugin
+tumbler
+ffmpegthumbnailer
+thunar-volman
+gvfs
+gvfs-mtp
+udisks2
 xarchiver
 mpv
 gnome-calculator
@@ -75,7 +79,6 @@ polkit-gnome
 sddm
 xdg-user-dirs
 libnotify
-timeshift
 
 # ── Shell ─────────────────────────────────────────────────────────────────
 vivid

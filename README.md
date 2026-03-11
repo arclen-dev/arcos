@@ -20,6 +20,8 @@ A clean, minimal Hyprland rice for Arch Linux.
 | Lock screen | Hyprlock |
 | Display manager | SDDM (silent theme) |
 | File manager | Thunar |
+| Text editor | Geany + Fresh |
+| Audio | PipeWire + pwvucontrol |
 | Browser | Brave |
 | Theme | adw-gtk3-dark |
 | Icons | Papirus-Dark |
@@ -41,7 +43,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-The installer will ask 4 questions (GPU type, laptop y/n, username confirm, hibernate swap), then run fully unattended.
+The installer will ask 4 questions (GPU type, laptop y/n, bluetooth y/n, username confirm), then run fully unattended.
 
 **Reboot after install:**
 ```bash
@@ -103,9 +105,7 @@ arcos/
 │   ├── gtk-3.0/
 │   ├── gtk-4.0/
 │   ├── nwg-look/
-│   ├── qt5ct/
-│   ├── qt6ct/
-│   └── kvantum/
+│   └── qt6ct/
 ├── fonts/              # Inter + FiraCode Nerd Font
 ├── zsh/
 │   ├── .zshrc
