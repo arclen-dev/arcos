@@ -74,7 +74,6 @@ for folder in "${DOTFILES[@]}"; do
     fi
 done
 
-# Remove zsh dotfiles
 [[ -f "$HOME/.zshrc" ]]    && rm -f "$HOME/.zshrc"    && success "Removed .zshrc"
 [[ -f "$HOME/.p10k.zsh" ]] && rm -f "$HOME/.p10k.zsh" && success "Removed .p10k.zsh"
 
@@ -82,6 +81,23 @@ done
 if [[ -d "$HOME/Pictures/Wallpapers" ]]; then
     rm -rf "$HOME/Pictures/Wallpapers"
     success "Removed ~/Pictures/Wallpapers"
+fi
+
+# ── Remove sddm-silent-theme ──────────────────────────────────────────────────
+echo ""
+info "Removing sddm-silent-theme package..."
+yay -Rns --noconfirm sddm-silent-theme 2>/dev/null && success "sddm-silent-theme removed" || warn "sddm-silent-theme not found or already removed"
+
+# Clean up theme dir in case it wasn't fully removed
+sudo rm -rf /usr/share/sddm/themes/silent 2>/dev/null || true
+
+# Revert /etc/sddm.conf — remove silent theme entries
+if [[ -f /etc/sddm.conf ]]; then
+    info "Reverting /etc/sddm.conf..."
+    sudo sed -i '/^Current=silent/d' /etc/sddm.conf
+    sudo sed -i '/^InputMethod=qtvirtualkeyboard/d' /etc/sddm.conf
+    sudo sed -i '/^GreeterEnvironment=.*silent.*/d' /etc/sddm.conf
+    success "sddm.conf reverted"
 fi
 
 # ── Restore backup ────────────────────────────────────────────────────────────
@@ -93,12 +109,11 @@ if [[ "${RESTORE:-false}" == true ]]; then
         cp -r "$folder" "$HOME/.config/$name"
         success "Restored ~/.config/$name"
     done
-
     [[ -f "$HOME/.zshrc.bak-arcos" ]]    && cp "$HOME/.zshrc.bak-arcos"    "$HOME/.zshrc"    && success "Restored .zshrc"
     [[ -f "$HOME/.p10k.zsh.bak-arcos" ]] && cp "$HOME/.p10k.zsh.bak-arcos" "$HOME/.p10k.zsh" && success "Restored .p10k.zsh"
 fi
 
-# ── Revert shell if it was changed to zsh ─────────────────────────────────────
+# ── Revert shell ──────────────────────────────────────────────────────────────
 echo ""
 read -rp "  Revert default shell back to bash? [y/N]: " REVERT_SHELL
 REVERT_SHELL="${REVERT_SHELL,,}"
@@ -111,11 +126,11 @@ echo ""
 read -rp "  Disable ArcOS-enabled services (sddm, NetworkManager)? [y/N]: " DISABLE_SERVICES
 DISABLE_SERVICES="${DISABLE_SERVICES,,}"
 if [[ "$DISABLE_SERVICES" == "y" ]]; then
-    sudo systemctl disable sddm 2>/dev/null && success "sddm disabled" || warn "sddm not found"
+    sudo systemctl disable sddm          2>/dev/null && success "sddm disabled"           || warn "sddm not found"
     sudo systemctl disable NetworkManager 2>/dev/null && success "NetworkManager disabled" || warn "NetworkManager not found"
-    sudo systemctl disable bluetooth 2>/dev/null && success "bluetooth disabled" || true
-    sudo systemctl disable tlp 2>/dev/null && success "tlp disabled" || true
-    sudo systemctl disable acpid 2>/dev/null && success "acpid disabled" || true
+    sudo systemctl disable bluetooth     2>/dev/null && success "bluetooth disabled"       || true
+    sudo systemctl disable tlp           2>/dev/null && success "tlp disabled"             || true
+    sudo systemctl disable acpid         2>/dev/null && success "acpid disabled"           || true
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
