@@ -5,16 +5,22 @@ WALL_DIR="$HOME/Pictures/Wallpapers"
 CACHE_DIR="$HOME/.cache/wallust-thumbs"
 mkdir -p "$CACHE_DIR"
 
-# --- Build the Rofi menu with image thumbnails ---
-SELECTION=$(find "$WALL_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" \
-    -o -iname "*.png" -o -iname "*.webp" \) | sort | while read -r img; do
+# --- Build entry list ---
+MENU=""
+MENU+="  Random Wallpaper\0icon\x1f/usr/share/icons/Papirus-Dark/24x24/actions/object-tweak-randomize.svg\n"
+
+while IFS= read -r img; do
     name=$(basename "$img")
-    echo -en "$name\0icon\x1f$img\n"
-done | rofi -dmenu \
+    MENU+="$name\0icon\x1f$img\n"
+done < <(find "$WALL_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" \
+    -o -iname "*.png" -o -iname "*.webp" \) | sort)
+
+# --- Show rofi menu ---
+SELECTION=$(printf "%b" "$MENU" | rofi -dmenu \
     -i \
     -p "Wallpaper" \
     -show-icons \
-    -theme "/home/arclen/.config/rofi/themes/launcher.rasi" \
+    -theme "~/.config/rofi/themes/launcher.rasi" \
     -theme-str '
         window {
             width: 900px;
@@ -22,26 +28,40 @@ done | rofi -dmenu \
             y-offset: 52px;
         }
         listview {
-            columns: 4;
-            lines: 3;
-            spacing: 4px;
-            padding: 4px;
+            columns:      4;
+            lines:        20;
+            scrollbar:    true;
+            spacing:      4px;
+            padding:      4px;
+            fixed-height: true;
         }
         element {
-            padding: 4px;
-            spacing: 4px;
+            padding:      4px;
+            spacing:      4px;
             border-radius: 8px;
-            orientation: vertical;
+            orientation:  vertical;
         }
         element-icon { size: 160px; }
-        element-text { enabled: true; font: "Inter 9"; vertical-align: 0.5; horizontal-align: 0.5; }
-    ' \
-)
+        element-text {
+            enabled:          true;
+            font:             "Inter 9";
+            vertical-align:   0.5;
+            horizontal-align: 0.5;
+        }
+    ')
 
 # Exit if nothing selected
 [ -z "$SELECTION" ] && exit 0
 
-WALLPAPER="$WALL_DIR/$SELECTION"
+# --- Handle random selection ---
+if [[ "$SELECTION" == "  Random Wallpaper" ]]; then
+    WALLPAPER=$(find "$WALL_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" \
+        -o -iname "*.png" -o -iname "*.webp" \) | shuf -n 1)
+else
+    WALLPAPER="$WALL_DIR/$SELECTION"
+fi
+
+[ -z "$WALLPAPER" ] && exit 0
 
 # --- Apply wallpaper with swww transition ---
 swww img "$WALLPAPER" \
@@ -59,7 +79,7 @@ echo "$WALLPAPER" > ~/.cache/wallust/wallpaper
 # --- Update hyprlock colors ---
 ~/.config/hypr/scripts/update-hyprlock-colors.sh
 
-# --- Update sddm wallpaper---
+# --- Update sddm wallpaper ---
 ~/.config/hypr/scripts/sync-sddm-wallpaper.sh
 
 # --- Restart Waybar to apply new CSS colors ---

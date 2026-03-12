@@ -65,7 +65,7 @@ read -rp "  Proceed with uninstall? Press Enter to continue or Ctrl+C to cancel.
 echo ""
 info "Removing ArcOS dotfiles..."
 
-DOTFILES=(hypr waybar rofi kitty swaync wallust swayosd btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct)
+DOTFILES=(hypr waybar rofi kitty swaync wallust btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct)
 
 for folder in "${DOTFILES[@]}"; do
     if [[ -d "$HOME/.config/$folder" ]]; then

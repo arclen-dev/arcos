@@ -60,6 +60,7 @@ noto-fonts-emoji
 brave-bin
 thunar
 thunar-archive-plugin
+7zip
 tumbler
 ffmpegthumbnailer
 thunar-volman
