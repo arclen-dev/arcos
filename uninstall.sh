@@ -111,6 +111,15 @@ if [[ "${RESTORE:-false}" == true ]]; then
     done
     [[ -f "$HOME/.zshrc.bak-arcos" ]]    && cp "$HOME/.zshrc.bak-arcos"    "$HOME/.zshrc"    && success "Restored .zshrc"
     [[ -f "$HOME/.p10k.zsh.bak-arcos" ]] && cp "$HOME/.p10k.zsh.bak-arcos" "$HOME/.p10k.zsh" && success "Restored .p10k.zsh"
+
+    # Revert swappiness — just remove the file we placed, default is restored on next boot
+    sudo rm -f /etc/sysctl.d/99-swappiness.conf 2>/dev/null && success "swappiness config removed (default restored on reboot)"
+else
+    # No backup existed — these were installed fresh by ArcOS, safe to remove
+    info "No backup found — removing ArcOS-installed shell tools..."
+    rm -rf "$HOME/.oh-my-zsh" 2>/dev/null && success "Removed oh-my-zsh" || true
+    rm -rf "$HOME/.local/share/fonts/Inter"* "$HOME/.local/share/fonts/FiraCode"*            "$HOME/.local/share/fonts/Orbitron"* 2>/dev/null && success "Removed ArcOS fonts" || true
+    sudo rm -f /etc/sysctl.d/99-swappiness.conf 2>/dev/null && success "swappiness config removed" || true
 fi
 
 # ── Revert shell ──────────────────────────────────────────────────────────────

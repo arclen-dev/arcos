@@ -308,6 +308,7 @@ success "Font cache updated"
 step "Installing Oh My Zsh"
 
 info "Installing Oh My Zsh (unattended)..."
+rm -rf "$HOME/.oh-my-zsh" 2>/dev/null || true
 RUNZSH=no KEEP_ZSHRC=yes \
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
     "" --unattended
@@ -318,6 +319,7 @@ step "Installing Powerlevel10k"
 
 P10K_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
 info "Cloning Powerlevel10k..."
+rm -rf "$P10K_DIR" 2>/dev/null || true
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_DIR"
 success "Powerlevel10k installed"
 
@@ -327,11 +329,13 @@ step "Installing ZSH plugins"
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 
 info "Installing zsh-autosuggestions..."
+rm -rf "$ZSH_CUSTOM/plugins/zsh-autosuggestions" 2>/dev/null || true
 git clone https://github.com/zsh-users/zsh-autosuggestions \
     "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 success "zsh-autosuggestions installed"
 
 info "Installing zsh-syntax-highlighting..."
+rm -rf "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" 2>/dev/null || true
 git clone https://github.com/zsh-users/zsh-syntax-highlighting \
     "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 success "zsh-syntax-highlighting installed"

@@ -13,7 +13,7 @@ chosen=$(echo -e "$lock\n$suspend\n$hibernate\n$logout\n$reboot\n$shutdown" | ro
     -dmenu \
     -i \
     -p "  Power" \
-    -theme "/home/arclen/.config/rofi/themes/launcher.rasi" \
+    -theme "~/.config/rofi/themes/launcher.rasi" \
     -theme-str '
         window {
             width: 220px;
