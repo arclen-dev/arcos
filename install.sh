@@ -112,13 +112,6 @@ if ! sudo -v &>/dev/null; then
 fi
 success "sudo access confirmed"
 
-# git installed
-if ! command -v git &>/dev/null; then
-    info "git not found — installing..."
-    sudo pacman -S --noconfirm git || error "Failed to install git."
-fi
-success "git available"
-
 # Internet check
 info "Checking internet connection..."
 INET_OK=false
@@ -130,6 +123,18 @@ for host in archlinux.org 8.8.8.8 1.1.1.1; do
 done
 [[ "$INET_OK" == true ]] || error "No internet connection detected. Check your network and try again."
 success "Internet OK"
+
+# Full system update before anything else
+info "Updating system packages..."
+sudo pacman -Syu --noconfirm || warn "System update failed — proceeding anyway"
+success "System up to date"
+ 
+# git installed
+if ! command -v git &>/dev/null; then
+    info "git not found — installing..."
+    sudo pacman -S --noconfirm git || error "Failed to install git."
+fi
+success "git available"
 
 # Disk space — warn if less than 10GB free
 FREE_GB=$(df -BG / | awk 'NR==2 {gsub("G",""); print $4}')
