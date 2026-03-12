@@ -1,8 +1,19 @@
 # ArcOS
 
-A clean, minimal Hyprland rice for Arch Linux — built around a dynamic color system that adapts the entire desktop to your wallpaper. Every element — the bar, terminal, launcher, lock screen, and notifications — updates automatically when you change your wallpaper, giving you a cohesive look without any manual theming.
+**A fast, minimal, and visually cohesive Hyprland rice for Arch Linux.**
 
-Comes with a fully automated installer that sets up everything from scratch: packages, AUR, shell, dotfiles, display manager, fonts, and services — with a single command.
+ArcOS is built for people who want a desktop that stays out of the way — no bloat, no unnecessary background processes, no visual noise. Just a clean, responsive environment that looks good and works fast.
+
+At its core is a dynamic color system powered by wallust. Every time you change your wallpaper, the entire desktop adapts — the bar, terminal, launcher, lock screen, borders, and notifications all update automatically to match. No manual theming, no config editing. One wallpaper change, one cohesive look.
+
+Getting started takes a single command. The installer handles everything — Chaotic AUR, packages, GPU drivers, shell setup, display manager, fonts, dotfiles, and services — fully unattended after 4 questions. Whether you are setting up a fresh Arch install or dropping the rice onto an existing system, it just works.
+
+**Why ArcOS:**
+- 🎨 Dynamic colorscheme — entire desktop updates on every wallpaper change
+- ⚡ Lightweight — no unnecessary daemons, minimal resource usage
+- 🔧 One-command install — fully automated, handles everything
+- 🧩 Modular dotfiles — easy to tweak, well organized
+- 🔒 Non-destructive — backs up your existing config before touching anything
 
 ![ArcOS Preview](assets/preview.png)
 
