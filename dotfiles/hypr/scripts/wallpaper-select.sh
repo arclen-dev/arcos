@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wallpaper selector: Rofi with thumbnail preview → swww → wallust → refresh all
+# Wallpaper selector: Rofi with thumbnail preview → awww → wallust → refresh all
 
 WALL_DIR="$HOME/Pictures/Wallpapers"
 CACHE_DIR="$HOME/.cache/wallust-thumbs"
@@ -64,7 +64,7 @@ fi
 [ -z "$WALLPAPER" ] && exit 0
 
 # --- Apply wallpaper with swww transition ---
-swww img "$WALLPAPER" \
+awww img "$WALLPAPER" \
     --transition-type wipe \
     --transition-angle 30 \
     --transition-duration 1.5 \

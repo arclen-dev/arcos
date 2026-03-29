@@ -17,7 +17,7 @@ xdg-desktop-portal-gtk
 uwsm
 
 # ── Wayland utilities ───────────────────────────────────────────────────
-swww
+awww
 waybar-git
 rofi-wayland
 rofimoji
