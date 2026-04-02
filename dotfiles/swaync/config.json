@@ -8,7 +8,7 @@
     "control-center-positionX": "right",
     "control-center-positionY": "top",
     "control-center-width": 380,
-    "control-center-height": 0,
+    "control-center-height": 700,
     "control-center-margin-top": 8,
     "control-center-margin-bottom": 8,
     "control-center-margin-right": 8,
@@ -91,7 +91,7 @@
         "mpris": {
             "image-size": 56,
             "image-radius": 10,
-            "player": "playerctld"
+            "hide-when-empty": true
         }
     }
 }
