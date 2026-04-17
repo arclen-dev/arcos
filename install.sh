@@ -362,8 +362,8 @@ copy_config() {
     local src="$DOTFILES/$1"
     local dst="$HOME/.config/$1"
     if [[ -e "$src" ]]; then
-        mkdir -p "$(dirname "$dst")"
-        cp -r "$src" "$dst"
+        mkdir -p "$dst"
+        cp -r "$src/." "$dst/"
         success "Copied $1"
     else
         warn "Skipping $1 (not found in repo)"
