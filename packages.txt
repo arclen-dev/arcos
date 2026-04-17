@@ -5,13 +5,14 @@
 # ── Core ────────────────────────────────────────────────────────────────
 base-devel
 git
-zsh
+fish
 nano
 kitty
 
 # ── Hyprland ────────────────────────────────────────────────────────────
 hyprland
 hyprlock
+hypridle
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 uwsm
@@ -38,6 +39,8 @@ pipewire-pulse
 wireplumber
 playerctl
 pwvucontrol
+alsa-utils
+sof-firmware
 
 # ── Network ─────────────────────────────────────────────────────────────
 networkmanager
@@ -80,6 +83,7 @@ polkit-gnome
 sddm
 xdg-user-dirs
 libnotify
+upower
 
 # ── Shell ─────────────────────────────────────────────────────────────────
 vivid

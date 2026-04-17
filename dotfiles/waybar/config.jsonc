@@ -16,6 +16,7 @@
         "hyprland/workspaces",
         "custom/mpris",
         "pulseaudio",
+        "battery",
         "network",
         "tray"
     ],
@@ -79,6 +80,22 @@
         "tooltip-format": "󰋋  {desc}"
     },
 
+    // ─── Battery (auto-hidden on desktops without battery) ───────────
+    "battery": {
+        "states": {
+            "good":     80,
+            "warning":  30,
+            "critical": 15
+        },
+        "format":           "{icon} {capacity}%",
+        "format-charging":  "󰂄 {capacity}%",
+        "format-plugged":   "󰚥 {capacity}%",
+        "format-full":      "󰁹 Full",
+        "format-icons":     ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+        "tooltip-format":   "{timeTo}  ·  {power:.1f}W",
+        "interval": 30
+    },
+
     // ─── Network ─────────────────────────────────────────────────────
     "network": {
         "format-wifi": "󰤨 {essid}",
@@ -95,12 +112,4 @@
         "spacing": 8,
         "show-passive-items": true
     }
-
-    // "wlr/taskbar": {
-    //     "format": "{icon}",
-    //     "icon-size": 18,
-    //     "tooltip-format": "{title}",
-    //     "on-click": "activate",
-    //     "on-click-middle": "close"
-    // }
 }

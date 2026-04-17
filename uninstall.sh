@@ -65,7 +65,7 @@ read -rp "  Proceed with uninstall? Press Enter to continue or Ctrl+C to cancel.
 echo ""
 info "Removing ArcOS dotfiles..."
 
-DOTFILES=(hypr waybar rofi kitty swaync wallust btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct)
+DOTFILES=(hypr waybar rofi kitty swaync hypridle wallust btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct fish)
 
 for folder in "${DOTFILES[@]}"; do
     if [[ -d "$HOME/.config/$folder" ]]; then
@@ -74,8 +74,7 @@ for folder in "${DOTFILES[@]}"; do
     fi
 done
 
-[[ -f "$HOME/.zshrc" ]]    && rm -f "$HOME/.zshrc"    && success "Removed .zshrc"
-[[ -f "$HOME/.p10k.zsh" ]] && rm -f "$HOME/.p10k.zsh" && success "Removed .p10k.zsh"
+# Fish config is removed as part of the dotfiles loop above
 
 # Remove wallpapers
 if [[ -d "$HOME/Pictures/Wallpapers" ]]; then
@@ -109,22 +108,21 @@ if [[ "${RESTORE:-false}" == true ]]; then
         cp -r "$folder" "$HOME/.config/$name"
         success "Restored ~/.config/$name"
     done
-    [[ -f "$HOME/.zshrc.bak-arcos" ]]    && cp "$HOME/.zshrc.bak-arcos"    "$HOME/.zshrc"    && success "Restored .zshrc"
-    [[ -f "$HOME/.p10k.zsh.bak-arcos" ]] && cp "$HOME/.p10k.zsh.bak-arcos" "$HOME/.p10k.zsh" && success "Restored .p10k.zsh"
+    # Restore fish config (handled via dotfiles loop above)
 
     # Revert swappiness — just remove the file we placed, default is restored on next boot
     sudo rm -f /etc/sysctl.d/99-swappiness.conf 2>/dev/null && success "swappiness config removed (default restored on reboot)"
 else
     # No backup existed — these were installed fresh by ArcOS, safe to remove
     info "No backup found — removing ArcOS-installed shell tools..."
-    rm -rf "$HOME/.oh-my-zsh" 2>/dev/null && success "Removed oh-my-zsh" || true
+    # No oh-my-zsh to remove (using fish)
     rm -rf "$HOME/.local/share/fonts/Inter"* "$HOME/.local/share/fonts/FiraCode"*            "$HOME/.local/share/fonts/Orbitron"* 2>/dev/null && success "Removed ArcOS fonts" || true
     sudo rm -f /etc/sysctl.d/99-swappiness.conf 2>/dev/null && success "swappiness config removed" || true
 fi
 
 # ── Revert shell ──────────────────────────────────────────────────────────────
 echo ""
-read -rp "  Revert default shell back to bash? [y/N]: " REVERT_SHELL
+read -rp "  Revert default shell back to bash? (removes fish as default) [y/N]: " REVERT_SHELL
 REVERT_SHELL="${REVERT_SHELL,,}"
 if [[ "$REVERT_SHELL" == "y" ]]; then
     chsh -s /bin/bash "$USER" && success "Shell reverted to bash"
@@ -138,7 +136,7 @@ if [[ "$DISABLE_SERVICES" == "y" ]]; then
     sudo systemctl disable sddm          2>/dev/null && success "sddm disabled"           || warn "sddm not found"
     sudo systemctl disable NetworkManager 2>/dev/null && success "NetworkManager disabled" || warn "NetworkManager not found"
     sudo systemctl disable bluetooth     2>/dev/null && success "bluetooth disabled"       || true
-    sudo systemctl disable tlp           2>/dev/null && success "tlp disabled"             || true
+    sudo systemctl disable power-profiles-daemon 2>/dev/null && success "power-profiles-daemon disabled" || true
     sudo systemctl disable acpid         2>/dev/null && success "acpid disabled"           || true
 fi
 

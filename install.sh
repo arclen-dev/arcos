@@ -17,7 +17,7 @@ BOLD='\033[1m'
 RESET='\033[0m'
 
 # ── Step tracking ─────────────────────────────────────────────────────────────
-TOTAL_STEPS=14
+TOTAL_STEPS=11
 CURRENT_STEP=0
 INSTALL_START=$(date +%s)
 
@@ -271,7 +271,7 @@ info "GPU driver packages for ${BOLD}$GPU${RESET}: $GPU_PKGS"
 PKGS="$PKGS $GPU_PKGS"
 
 [[ "$INSTALL_BT" == "y" ]] && PKGS="$PKGS bluez bluez-utils blueman"
-[[ "$IS_LAPTOP" == "y" ]]  && PKGS="$PKGS tlp tlp-rdw acpi acpid brightnessctl xf86-input-libinput"
+[[ "$IS_LAPTOP" == "y" ]]  && PKGS="$PKGS power-profiles-daemon acpi acpid brightnessctl xf86-input-libinput iio-sensor-proxy"
 
 info "Installing all packages — this will take a while, grab a coffee ☕"
 yay -S --needed --noconfirm $PKGS
@@ -304,54 +304,17 @@ fi
 fc-cache -fv &>/dev/null
 success "Font cache updated"
 
-# ── Step 6: Oh My Zsh ─────────────────────────────────────────────────────────
-step "Installing Oh My Zsh"
-
-info "Installing Oh My Zsh (unattended)..."
-rm -rf "$HOME/.oh-my-zsh" 2>/dev/null || true
-RUNZSH=no KEEP_ZSHRC=yes \
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
-    "" --unattended
-success "Oh My Zsh installed"
-
-# ── Step 7: Powerlevel10k ─────────────────────────────────────────────────────
-step "Installing Powerlevel10k"
-
-P10K_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
-info "Cloning Powerlevel10k..."
-rm -rf "$P10K_DIR" 2>/dev/null || true
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_DIR"
-success "Powerlevel10k installed"
-
-# ── Step 8: ZSH plugins ───────────────────────────────────────────────────────
-step "Installing ZSH plugins"
-
-ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
-
-info "Installing zsh-autosuggestions..."
-rm -rf "$ZSH_CUSTOM/plugins/zsh-autosuggestions" 2>/dev/null || true
-git clone https://github.com/zsh-users/zsh-autosuggestions \
-    "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-success "zsh-autosuggestions installed"
-
-info "Installing zsh-syntax-highlighting..."
-rm -rf "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" 2>/dev/null || true
-git clone https://github.com/zsh-users/zsh-syntax-highlighting \
-    "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-success "zsh-syntax-highlighting installed"
-
 # ── Step 9: Backup existing configs ───────────────────────────────────────────
 step "Backing up existing configs"
 
 BACKUP_DIR="$HOME/.config.bak-arcos-$(date +%Y%m%d-%H%M%S)"
-DOTFILES_TO_COPY=(hypr waybar rofi kitty swaync wallust swayosd btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct)
+DOTFILES_TO_COPY=(hypr waybar rofi kitty swaync hypridle wallust swayosd btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct fish)
 info "Backing up ArcOS-related config folders to $BACKUP_DIR ..."
 mkdir -p "$BACKUP_DIR"
 for folder in "${DOTFILES_TO_COPY[@]}"; do
     [[ -d "$HOME/.config/$folder" ]] && cp -r "$HOME/.config/$folder" "$BACKUP_DIR/" && success "Backed up $folder"
 done
-[[ -f "$HOME/.zshrc" ]]    && cp "$HOME/.zshrc"    "$HOME/.zshrc.bak-arcos"    && success ".zshrc backed up"
-[[ -f "$HOME/.p10k.zsh" ]] && cp "$HOME/.p10k.zsh" "$HOME/.p10k.zsh.bak-arcos" && success ".p10k.zsh backed up"
+[[ -d "$HOME/.config/fish" ]] && cp -r "$HOME/.config/fish" "$BACKUP_DIR/" && success "Backed up fish config"
 
 # ── Step 10: Copy dotfiles ────────────────────────────────────────────────────
 step "Installing dotfiles"
@@ -375,6 +338,7 @@ copy_config "waybar"
 copy_config "rofi"
 copy_config "kitty"
 copy_config "swaync"
+copy_config "hypridle"
 copy_config "wallust"
 copy_config "swayosd"
 copy_config "btop"
@@ -385,8 +349,8 @@ copy_config "nwg-look"
 copy_config "geany"
 copy_config "qt6ct"
 
-[[ -f "$REPO_DIR/zsh/.zshrc" ]]    && cp "$REPO_DIR/zsh/.zshrc"    "$HOME/.zshrc"    && success "Copied .zshrc"
-[[ -f "$REPO_DIR/zsh/.p10k.zsh" ]] && cp "$REPO_DIR/zsh/.p10k.zsh" "$HOME/.p10k.zsh" && success "Copied .p10k.zsh"
+# Copy fish config
+copy_config "fish"
 
 chmod +x "$HOME/.config/hypr/scripts/"*.sh 2>/dev/null || true
 
@@ -453,15 +417,19 @@ if [[ "$INSTALL_BT" == "y" ]]; then
 fi
 
 if [[ "$IS_LAPTOP" == "y" ]]; then
-    sudo systemctl enable tlp
+    sudo systemctl enable --now power-profiles-daemon 2>/dev/null || warn "power-profiles-daemon not found (may already be active)"
     sudo systemctl enable acpid
-    success "laptop power management enabled (tlp, acpid)"
+    success "laptop power management enabled (power-profiles-daemon, acpid)"
 fi
 
-# ── Step 13b: Set ZSH as default shell ────────────────────────────────────────
-ZSH_PATH="$(which zsh)"
-chsh -s "$ZSH_PATH" "$USER"
-success "Default shell set to ZSH"
+# ── Set Fish as default shell ────────────────────────────────────────────────
+if command -v fish &>/dev/null; then
+    FISH_PATH="$(which fish)"
+    chsh -s "$FISH_PATH" "$USER"
+    success "Default shell set to Fish"
+else
+    warn "fish not found in PATH — shell not changed"
+fi
 
 # ── Step 14: Initial wallust run + cleanup ────────────────────────────────────
 step "Final setup"

@@ -196,3 +196,38 @@ tooltip label {
     font-weight:    500;
     padding:        0.31em 0.92em;     /* 4px 12px */
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   BATTERY
+   Hidden automatically on desktops (waybar skips module if no BAT)
+═══════════════════════════════════════════════════════════════════ */
+#battery {
+    padding:    0 0.77em;
+    color:      @color2;
+}
+
+#battery.charging,
+#battery.plugged {
+    color:      @color10;
+}
+
+#battery.good {
+    color:      @color2;
+}
+
+#battery.warning {
+    color:      @color3;
+}
+
+#battery.critical:not(.charging) {
+    color:          @color1;
+    animation-name: blink;
+    animation-duration: 1.5s;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+@keyframes blink {
+    to { color: @color9; }
+}
