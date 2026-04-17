@@ -389,6 +389,11 @@ copy_config "qt6ct"
 [[ -f "$REPO_DIR/zsh/.p10k.zsh" ]] && cp "$REPO_DIR/zsh/.p10k.zsh" "$HOME/.p10k.zsh" && success "Copied .p10k.zsh"
 
 chmod +x "$HOME/.config/hypr/scripts/"*.sh 2>/dev/null || true
+
+# Run hyprlock-gen immediately so the lock screen is ready before first use
+info "Generating resolution-aware hyprlock config..."
+bash "$HOME/.config/hypr/scripts/hyprlock-gen.sh" --now 2>/dev/null || \
+    warn "hyprlock-gen skipped (Hyprland not running yet — will run automatically on next login)"
 success "Scripts made executable"
 
 mkdir -p "$HOME/Pictures/Wallpapers"
