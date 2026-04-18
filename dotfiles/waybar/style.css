@@ -2,18 +2,17 @@
 
 /* ═══════════════════════════════════════════════════════════════════
    RESOLUTION SCALING
-   Change font-size on * to scale the entire bar proportionally:
+   Change font-size on * to scale the entire bar:
      1280×800  → 12px
      1440×900  → 13px  (default)
      1920×1080 → 15px
      2560×1440 → 18px
-   All other sizes use em/rem so they follow this one value.
 ═══════════════════════════════════════════════════════════════════ */
 * {
     border:         none;
     border-radius:  0;
     font-family:    "Inter", "FiraCode Nerd Font";
-    font-size:      13px;       /* ← SINGLE CONTROL POINT for scaling */
+    font-size:      13px;
     font-weight:    600;
     min-height:     0;
     padding:        0;
@@ -21,213 +20,126 @@
     transition:     color 10ms ease, background-color 0.3s ease;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   BAR WINDOW — transparent canvas
-═══════════════════════════════════════════════════════════════════ */
 window#waybar {
-    background:     transparent;
-    color:          @foreground;
+    background: transparent;
+    color:      @foreground;
 }
 
-window#waybar.hidden {
-    opacity: 0;
-}
+window#waybar.hidden { opacity: 0; }
 
-/* ═══════════════════════════════════════════════════════════════════
-   LEFT / RIGHT — empty, must be fully collapsed
-═══════════════════════════════════════════════════════════════════ */
 .modules-left,
 .modules-right {
-    background:     transparent;
-    padding:        0;
-    margin:         0;
-    min-width:      0;
-    border:         none;
+    background: transparent;
+    padding:    0;
+    margin:     0;
+    min-width:  0;
+    border:     none;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   CENTER — this IS the pill
-═══════════════════════════════════════════════════════════════════ */
 .modules-center {
     background-color: @background;
     border-radius:    999px;
     border:           1px solid alpha(@color8, 0.30);
-    padding:          0.38em 0.77em;    /* 5px 10px @ 13px base */
+    padding:          0.38em 0.77em;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   WORKSPACES
-═══════════════════════════════════════════════════════════════════ */
-#workspaces {
-    padding:    0 0.15em;   /* 0 2px */
-    margin:     0;
-}
+/* ── Workspaces ────────────────────────────────────────────────── */
+#workspaces { padding: 0 0.15em; margin: 0; }
 
 #workspaces button {
-    padding:          0.23em 0.62em;    /* 3px 8px */
-    margin:           0 0.08em;         /* 0 1px */
-    background:       transparent;
-    color:            alpha(@foreground, 0.55);
-    border-radius:    999px;
-    font-size:        0.92rem;          /* 12px */
-    font-weight:      700;
-    min-width:        1.85em;           /* 24px */
-    transition:       ease-in-out 0.3s;
+    padding:       0.23em 0.62em;
+    margin:        0 0.08em;
+    background:    transparent;
+    color:         alpha(@foreground, 0.55);
+    border-radius: 999px;
+    font-size:     0.92rem;
+    font-weight:   700;
+    min-width:     1.85em;
+    transition:    ease-in-out 0.3s;
 }
 
-#workspaces button.empty {
-    color:            alpha(@foreground, 0.18);
-}
-
-#workspaces button:hover {
-    background:   alpha(@color8, 0.20);
-    color:        alpha(@foreground, 0.70);
-}
+#workspaces button.empty  { color: alpha(@foreground, 0.18); }
+#workspaces button:hover  { background: alpha(@color8, 0.20); color: alpha(@foreground, 0.70); }
 
 #workspaces button.active,
 #workspaces button.focused {
-    background:   linear-gradient(135deg, @color4, @color5);
-    color:        @background;
-    font-weight:  800;
-    padding:      0.23em 1em;          /* 3px 13px */
+    background:  linear-gradient(135deg, @color4, @color5);
+    color:       @background;
+    font-weight: 800;
+    padding:     0.23em 1em;
 }
 
 #workspaces button.urgent {
-    background:   linear-gradient(135deg, @color1, @color9);
-    color:        @background;
+    background: linear-gradient(135deg, @color1, @color9);
+    color:      @background;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   CLOCK
-═══════════════════════════════════════════════════════════════════ */
+/* ── Clock ─────────────────────────────────────────────────────── */
 #clock {
-    padding:        0 1.08em;          /* 0 14px */
+    padding:        0 1.08em;
     color:          @foreground;
-    font-size:      1.08rem;           /* 14px */
+    font-size:      1.08rem;
     font-weight:    700;
-    letter-spacing: 0.04em;            /* 0.5px → proportional */
+    letter-spacing: 0.04em;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   MPRIS
-═══════════════════════════════════════════════════════════════════ */
+/* ── MPRIS ─────────────────────────────────────────────────────── */
 #custom-mpris {
-    padding:     0 0.77em;             /* 0 10px */
+    padding:     0 0.77em;
     color:       @color6;
-    font-size:   0.92rem;              /* 12px */
-    min-width:   11.5rem;              /* 150px */
+    font-size:   0.92rem;
+    min-width:   11.5rem;
     font-family: "Inter";
 }
 
-#custom-mpris.paused {
-    color: alpha(@foreground, 0.30);
+#custom-mpris.paused  { color: alpha(@foreground, 0.30); }
+#custom-mpris.stopped { padding: 0; font-size: 0; min-width: 0; margin: 0; }
+
+/* ── Pulseaudio ────────────────────────────────────────────────── */
+#pulseaudio         { padding: 0 0.77em; color: @color4; }
+#pulseaudio.muted   { color: alpha(@foreground, 0.25); }
+#pulseaudio:hover   { color: @color12; }
+
+/* ── Battery ───────────────────────────────────────────────────── */
+#battery            { padding: 0 0.77em; color: @color2; }
+#battery.charging,
+#battery.plugged    { color: @color10; }
+#battery.good       { color: @color2; }
+#battery.warning    { color: @color3; }
+
+#battery.critical:not(.charging) {
+    color:                    @color1;
+    animation-name:           blink;
+    animation-duration:       1.5s;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction:      alternate;
 }
 
-#custom-mpris.stopped {
-    padding:    0;
-    font-size:  0;
-    min-width:  0;
-    margin:     0;
-}
+@keyframes blink { to { color: @color9; } }
 
-/* ═══════════════════════════════════════════════════════════════════
-   PULSEAUDIO
-═══════════════════════════════════════════════════════════════════ */
-#pulseaudio {
-    padding:    0 0.77em;              /* 0 10px */
-    color:      @color4;
-}
+/* ── Network ───────────────────────────────────────────────────── */
+#network              { padding: 0 0.77em; color: @color12; }
+#network.disconnected { color: @color1; }
+#network:hover        { color: @color10; }
 
-#pulseaudio.muted {
-    color: alpha(@foreground, 0.25);
-}
+/* ── Tray ──────────────────────────────────────────────────────── */
+#tray                    { padding: 0 0.62em; }
+#tray > .passive         { -gtk-icon-effect: dim; opacity: 0.35; }
+#tray > .needs-attention { -gtk-icon-effect: highlight; color: @color3; }
 
-#pulseaudio:hover {
-    color: @color12;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   NETWORK
-═══════════════════════════════════════════════════════════════════ */
-#network {
-    padding:    0 0.77em;              /* 0 10px */
-    color:      @color12;
-}
-
-#network.disconnected {
-    color: @color1;
-}
-
-#network:hover {
-    color: @color10;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   TRAY
-═══════════════════════════════════════════════════════════════════ */
-#tray {
-    padding:    0 0.62em;              /* 0 8px */
-}
-
-#tray > .passive {
-    -gtk-icon-effect:   dim;
-    opacity:            0.35;
-}
-
-#tray > .needs-attention {
-    -gtk-icon-effect:   highlight;
-    color:              @color3;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   TOOLTIPS
-═══════════════════════════════════════════════════════════════════ */
+/* ── Tooltips ──────────────────────────────────────────────────── */
 tooltip {
-    background:     @background;
-    border:         1px solid alpha(@color4, 0.40);
-    border-radius:  1.23rem;           /* 16px */
-    padding:        0.31em;            /* 4px */
-    box-shadow:     0 4px 20px alpha(@color4, 0.12);
+    background:    @background;
+    border:        1px solid alpha(@color4, 0.40);
+    border-radius: 1.23rem;
+    padding:       0.31em;
+    box-shadow:    0 4px 20px alpha(@color4, 0.12);
 }
 
 tooltip label {
-    color:          @foreground;
-    font-size:      0.92rem;           /* 12px */
-    font-weight:    500;
-    padding:        0.31em 0.92em;     /* 4px 12px */
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   BATTERY
-   Hidden automatically on desktops (waybar skips module if no BAT)
-═══════════════════════════════════════════════════════════════════ */
-#battery {
-    padding:    0 0.77em;
-    color:      @color2;
-}
-
-#battery.charging,
-#battery.plugged {
-    color:      @color10;
-}
-
-#battery.good {
-    color:      @color2;
-}
-
-#battery.warning {
-    color:      @color3;
-}
-
-#battery.critical:not(.charging) {
-    color:          @color1;
-    animation-name: blink;
-    animation-duration: 1.5s;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
-}
-
-@keyframes blink {
-    to { color: @color9; }
+    color:       @foreground;
+    font-size:   0.92rem;
+    font-weight: 500;
+    padding:     0.31em 0.92em;
 }

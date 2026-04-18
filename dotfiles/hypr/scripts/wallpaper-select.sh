@@ -2,8 +2,7 @@
 # Wallpaper selector: Rofi with thumbnail preview → awww → wallust → refresh all
 
 WALL_DIR="$HOME/Pictures/Wallpapers"
-CACHE_DIR="$HOME/.cache/wallust-thumbs"
-mkdir -p "$CACHE_DIR"
+mkdir -p "$WALL_DIR"
 
 # --- Build entry list ---
 MENU=""
@@ -61,36 +60,34 @@ else
     WALLPAPER="$WALL_DIR/$SELECTION"
 fi
 
-[ -z "$WALLPAPER" ] && exit 0
+[ -z "$WALLPAPER" ] || [ ! -f "$WALLPAPER" ] && exit 0
 
-# --- Apply wallpaper with swww transition ---
+# --- Apply wallpaper ---
 awww img "$WALLPAPER" \
     --transition-type wipe \
     --transition-angle 30 \
     --transition-duration 1.5 \
     --transition-fps 60
 
-# --- Run wallust to generate new color templates ---
+# --- Run wallust ---
 wallust run "$WALLPAPER"
 
-# --- Save wallpaper path for restore and toggle scripts ---
+# --- Save path for restore and other scripts ---
+mkdir -p ~/.cache/wallust
 echo "$WALLPAPER" > ~/.cache/wallust/wallpaper
 
-# --- Update hyprlock colors ---
-~/.config/hypr/scripts/update-hyprlock-colors.sh
+# --- Regenerate hyprlock dynamic config with new colors ---
+~/.config/hypr/scripts/hyprlock-gen.sh --now
 
-# --- Update sddm wallpaper ---
-~/.config/hypr/scripts/sync-sddm-wallpaper.sh
-
-# --- Restart Waybar to apply new CSS colors ---
+# --- Restart Waybar ---
 pkill waybar
-sleep 0.5
+sleep 0.3
 waybar &
 
-# --- Reload Kitty with new colors (no restart needed) ---
-pkill -SIGUSR1 kitty
+# --- Reload Kitty colors ---
+pkill -SIGUSR1 kitty 2>/dev/null || true
 
-# --- Reload Hyprland config for border colors ---
+# --- Reload Hyprland border colors ---
 hyprctl reload
 
 echo "Wallpaper set: $WALLPAPER"
