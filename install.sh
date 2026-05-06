@@ -4,19 +4,24 @@
 #  github.com/arclen-dev/arcos
 # =============================================================================
 
+# ── Colors ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
 WHITE='\033[1;37m'
 DIM='\033[2m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-TOTAL_STEPS=11
+# ── Step tracking ─────────────────────────────────────────────────────────────
+TOTAL_STEPS=14
 CURRENT_STEP=0
 INSTALL_START=$(date +%s)
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
 info()    { echo -e "  ${CYAN}${BOLD}➜${RESET}  $*"; }
 success() { echo -e "  ${GREEN}${BOLD}✔${RESET}  $*"; }
 warn()    { echo -e "  ${YELLOW}${BOLD}!${RESET}  ${YELLOW}$*${RESET}"; }
@@ -37,6 +42,14 @@ step() {
     echo -e "  ${CYAN}└──────────────────────────────────────────────────────┘${RESET}"
 }
 
+box() {
+    local msg="$*"
+    echo -e "  ${DIM}┌──────────────────────────────────────────────────────┐${RESET}"
+    echo -e "  ${DIM}│${RESET}  $msg"
+    echo -e "  ${DIM}└──────────────────────────────────────────────────────┘${RESET}"
+}
+
+# Spinner for long-running commands
 spinner() {
     local pid=$1
     local msg="${2:-Working...}"
@@ -52,8 +65,12 @@ spinner() {
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ── Sudo keepalive ────────────────────────────────────────────────────────────
 sudo_keepalive() {
-    while true; do sudo -v; sleep 240; done &
+    while true; do
+        sudo -v
+        sleep 240
+    done &
     SUDO_KEEPALIVE_PID=$!
 }
 stop_keepalive() {
@@ -78,41 +95,51 @@ echo -e "  ${WHITE}${BOLD}Hyprland rice installer${RESET}  ${DIM}by arclen-dev${
 echo -e "  ${DIM}github.com/arclen-dev/arcos${RESET}"
 echo -e "  ${DIM}────────────────────────────────────────${RESET}\n"
 
-# ── Pre-flight checks ─────────────────────────────────────────────────────────
+# ── Step 0: Pre-flight checks ─────────────────────────────────────────────────
 echo -e "  ${CYAN}${BOLD}Running pre-flight checks...${RESET}\n"
 
+# Not root
 [[ "$EUID" -eq 0 ]] && error "Do not run as root. Run as your normal user."
 success "Running as user: ${BOLD}$USER${RESET}"
 
-[[ -f /etc/arch-release ]] || error "This installer requires an Arch-based distro."
-success "Arch-based distro detected"
+# Arch Linux
+[[ -f /etc/arch-release ]] || error "This installer is for Arch Linux only."
+success "Arch Linux detected"
 
+# sudo access
 if ! sudo -v &>/dev/null; then
-    error "User $USER does not have sudo access."
+    error "User $USER does not have sudo access. Add yourself to the sudoers file first."
 fi
 success "sudo access confirmed"
 
+# git installed
 if ! command -v git &>/dev/null; then
     info "git not found — installing..."
     sudo pacman -S --noconfirm git || error "Failed to install git."
 fi
 success "git available"
 
+# Internet check
 info "Checking internet connection..."
 INET_OK=false
 for host in archlinux.org 8.8.8.8 1.1.1.1; do
-    if ping -c 1 -W 2 "$host" &>/dev/null; then INET_OK=true; break; fi
+    if ping -c 1 -W 2 "$host" &>/dev/null; then
+        INET_OK=true
+        break
+    fi
 done
-[[ "$INET_OK" == true ]] || error "No internet connection detected."
+[[ "$INET_OK" == true ]] || error "No internet connection detected. Check your network and try again."
 success "Internet OK"
 
+# Disk space — warn if less than 10GB free
 FREE_GB=$(df -BG / | awk 'NR==2 {gsub("G",""); print $4}')
 if [[ "$FREE_GB" -lt 10 ]]; then
-    warn "Only ${FREE_GB}GB free on /. Recommended: 10GB+."
+    warn "Only ${FREE_GB}GB free on /. Recommended: 10GB+. Proceeding anyway..."
 else
     success "Disk space OK (${FREE_GB}GB free)"
 fi
 
+# GPU detection
 info "Detecting GPU..."
 GPU_DETECTED=""
 GPU_NAME=""
@@ -126,12 +153,19 @@ elif lspci 2>/dev/null | grep -qi "intel.*graphics\|intel.*vga"; then
     GPU_DETECTED="intel"
     GPU_NAME=$(lspci | grep -iE "intel.*graphics|intel.*vga" | head -1 | sed 's/.*: //')
 fi
-[[ -n "$GPU_DETECTED" ]] && success "GPU detected: ${BOLD}$GPU_NAME${RESET}" || warn "Could not auto-detect GPU."
+
+if [[ -n "$GPU_DETECTED" ]]; then
+    success "GPU detected: ${BOLD}$GPU_NAME${RESET}"
+else
+    warn "Could not auto-detect GPU. You will be asked manually."
+fi
+
 echo ""
 
+# Start sudo keepalive now that sudo is confirmed
 sudo_keepalive
 
-# ── Step 1: Configuration questions ──────────────────────────────────────────
+# ── Step 1: Ask all questions upfront ─────────────────────────────────────────
 echo -e "  ${CYAN}${BOLD}Configuration${RESET}\n"
 echo -e "  ${DIM}Answer the following. The install will then run unattended.${RESET}\n"
 
@@ -139,46 +173,62 @@ echo -e "  ${DIM}Answer the following. The install will then run unattended.${RE
 echo -e "  ${BOLD}[1] GPU type${RESET}"
 if [[ -n "$GPU_DETECTED" ]]; then
     echo -e "      ${DIM}Auto-detected:${RESET} ${GREEN}${GPU_NAME}${RESET}"
-    echo -e "      1) Use detected ${DIM}(${GPU_DETECTED})${RESET}  2) Intel  3) AMD  4) NVIDIA"
+    echo -e "      1) Use detected ${DIM}(${GPU_DETECTED})${RESET}"
+    echo -e "      2) Intel"
+    echo -e "      3) AMD"
+    echo -e "      4) NVIDIA"
     read -rp "      Choice [1/2/3/4, default=1]: " GPU_CHOICE
     GPU_CHOICE="${GPU_CHOICE:-1}"
     case "$GPU_CHOICE" in
-        1) GPU="$GPU_DETECTED" ;; 2) GPU="intel" ;; 3) GPU="amd" ;; 4) GPU="nvidia" ;;
-        *) warn "Invalid, using auto-detected"; GPU="$GPU_DETECTED" ;;
+        1) GPU="$GPU_DETECTED" ;;
+        2) GPU="intel"  ;;
+        3) GPU="amd"    ;;
+        4) GPU="nvidia" ;;
+        *) warn "Invalid choice, using auto-detected: $GPU_DETECTED"; GPU="$GPU_DETECTED" ;;
     esac
 else
-    echo -e "      1) Intel  2) AMD  3) NVIDIA"
+    echo -e "      1) Intel"
+    echo -e "      2) AMD"
+    echo -e "      3) NVIDIA"
     while true; do
         read -rp "      Choice [1/2/3]: " GPU_CHOICE
         case "$GPU_CHOICE" in
-            1) GPU="intel"; break ;; 2) GPU="amd"; break ;; 3) GPU="nvidia"; break ;;
-            *) warn "Invalid choice." ;;
+            1) GPU="intel";  break ;;
+            2) GPU="amd";    break ;;
+            3) GPU="nvidia"; break ;;
+            *) warn "Invalid choice. Please enter 1, 2 or 3." ;;
         esac
     done
 fi
 
+# Laptop
 echo ""
 echo -e "  ${BOLD}[2] Is this a laptop?${RESET} ${DIM}(installs power management, touchpad, backlight tools)${RESET}"
 read -rp "      [y/N]: " IS_LAPTOP
 IS_LAPTOP="${IS_LAPTOP,,}"
 
+# Bluetooth
 echo ""
-echo -e "  ${BOLD}[3] Install Bluetooth?${RESET} ${DIM}(bluez, bluez-utils, blueman)${RESET}"
+echo -e "  ${BOLD}[3] Install and enable Bluetooth?${RESET} ${DIM}(bluez, bluez-utils, blueman)${RESET}"
 read -rp "      [y/N]: " INSTALL_BT
 INSTALL_BT="${INSTALL_BT,,}"
 
+# Username confirm
 echo ""
 echo -e "  ${BOLD}[4] Detected username:${RESET} ${GREEN}${BOLD}$USER${RESET}"
 read -rp "      Is this correct? [Y/n]: " CONFIRM_USER
-[[ "${CONFIRM_USER,,}" == "n" ]] && error "Run the installer as the correct user."
+CONFIRM_USER="${CONFIRM_USER,,}"
+[[ "$CONFIRM_USER" == "n" ]] && error "Please run the installer as the correct user."
 
+# Summary box
 echo ""
 echo -e "  ${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
 echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Install Summary${RESET}"
-echo -e "  ${CYAN}│${RESET}  ${DIM}User      ${RESET} ${BOLD}$USER${RESET}"
-echo -e "  ${CYAN}│${RESET}  ${DIM}GPU       ${RESET} ${BOLD}$GPU${RESET}"
-echo -e "  ${CYAN}│${RESET}  ${DIM}Laptop    ${RESET} ${BOLD}${IS_LAPTOP:-n}${RESET}"
-echo -e "  ${CYAN}│${RESET}  ${DIM}Bluetooth ${RESET} ${BOLD}${INSTALL_BT:-n}${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}─────────────────────────────────────────────────────${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}User     ${RESET} ${BOLD}$USER${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}GPU      ${RESET} ${BOLD}$GPU${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}Laptop   ${RESET} ${BOLD}${IS_LAPTOP:-n}${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${DIM}Bluetooth${RESET} ${BOLD}${INSTALL_BT:-n}${RESET}"
 echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
 echo ""
 read -rp "  Looks good? Press Enter to begin or Ctrl+C to cancel... "
@@ -186,22 +236,23 @@ read -rp "  Looks good? Press Enter to begin or Ctrl+C to cancel... "
 # ── Step 2: Chaotic AUR ───────────────────────────────────────────────────────
 step "Setting up Chaotic AUR"
 
-# CachyOS ships with chaotic-aur already configured — skip if already present
-if grep -q "chaotic-aur" /etc/pacman.conf; then
-    success "Chaotic AUR already configured — skipping keyring step"
-else
-    sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
-    sudo pacman-key --lsign-key 3056513887B78AEB
-    sudo pacman -U --noconfirm \
-        'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
-    sudo pacman -U --noconfirm \
-        'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+sudo pacman-key --lsign-key 3056513887B78AEB
+sudo pacman -U --noconfirm \
+    'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
+sudo pacman -U --noconfirm \
+    'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+grep -q "chaotic-aur" /etc/pacman.conf || \
     echo -e "\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist" \
-        | sudo tee -a /etc/pacman.conf > /dev/null
-    success "Chaotic AUR configured"
-fi
-
+    | sudo tee -a /etc/pacman.conf > /dev/null
+info "Sorting Chaotic AUR mirrors by speed..."
+sudo pacman -S --noconfirm rate-mirrors 2>/dev/null || true
+rate-mirrors --allow-root chaotic-aur 2>/dev/null | sudo tee /etc/pacman.d/chaotic-mirrorlist > /dev/null || \
+    warn "Mirror sorting failed — using default mirrorlist"
 sudo pacman -Sy
+success "Chaotic AUR configured"
+
+# Install yay
 info "Installing yay..."
 sudo pacman -S --needed --noconfirm yay
 success "yay ready"
@@ -209,68 +260,102 @@ success "yay ready"
 # ── Step 3: Install packages ──────────────────────────────────────────────────
 step "Installing packages"
 
-# Resolve jack conflict before installing: remove jack2 if present
-if pacman -Q jack2 &>/dev/null; then
-    info "Removing jack2 to avoid conflict with pipewire-jack..."
-    sudo pacman -Rdd --noconfirm jack2 2>/dev/null || true
-    success "jack2 removed"
-fi
-
 PKGS=$(grep -v '^#' "$REPO_DIR/packages.txt" | grep -v '^$' | tr '\n' ' ')
 
 case "$GPU" in
-    # intel-media-driver covers Broadwell (2014) and newer.
-    # libva-intel-driver covers older chips up to Haswell (2013).
-    # Both can coexist — mesa provides the Vulkan driver for Intel.
-    intel)  GPU_PKGS="mesa vulkan-intel intel-media-driver libva-intel-driver" ;;
-    amd)    GPU_PKGS="mesa vulkan-radeon libva-mesa-driver" ;;
+    intel)  GPU_PKGS="mesa intel-media-driver vulkan-intel libva-intel-driver" ;;
+    amd)    GPU_PKGS="mesa vulkan-radeon libva-mesa-driver amdvlk" ;;
     nvidia) GPU_PKGS="nvidia nvidia-utils nvidia-settings libva-nvidia-driver" ;;
 esac
-info "GPU packages for ${BOLD}$GPU${RESET}: $GPU_PKGS"
+info "GPU driver packages for ${BOLD}$GPU${RESET}: $GPU_PKGS"
 PKGS="$PKGS $GPU_PKGS"
 
 [[ "$INSTALL_BT" == "y" ]] && PKGS="$PKGS bluez bluez-utils blueman"
-[[ "$IS_LAPTOP"  == "y" ]] && PKGS="$PKGS power-profiles-daemon acpi acpid brightnessctl xf86-input-libinput iio-sensor-proxy"
+[[ "$IS_LAPTOP" == "y" ]]  && PKGS="$PKGS tlp tlp-rdw acpi acpid brightnessctl xf86-input-libinput"
 
 info "Installing all packages — this will take a while, grab a coffee ☕"
 yay -S --needed --noconfirm $PKGS
 success "All packages installed"
 
-# ── Step 4: SDDM theme ───────────────────────────────────────────────────────
+# ── Step 4: sddm-silent-theme ─────────────────────────────────────────────────
 step "Installing SDDM silent theme"
+
 yay -S --needed --noconfirm sddm-silent-theme
 success "sddm-silent-theme installed"
 
-# ── Step 5: Fonts ────────────────────────────────────────────────────────────
+# ── Step 5: Fonts ─────────────────────────────────────────────────────────────
 step "Installing fonts"
+
 mkdir -p "$HOME/.local/share/fonts"
 if [[ -d "$REPO_DIR/fonts" ]]; then
+    info "Copying bundled fonts..."
     cp -r "$REPO_DIR/fonts/"* "$HOME/.local/share/fonts/"
     success "Fonts copied from repo"
 else
-    info "Downloading Inter font..."
+    info "Downloading Inter font from rsms/inter (official source)..."
     mkdir -p /tmp/inter-install
     curl -L https://github.com/rsms/inter/releases/latest/download/Inter.zip \
         -o /tmp/inter-install/Inter.zip
     unzip -o /tmp/inter-install/Inter.zip -d /tmp/inter-install/
     find /tmp/inter-install -name "*.ttf" -exec cp {} "$HOME/.local/share/fonts/" \;
     rm -rf /tmp/inter-install
-    success "Inter font downloaded"
+    success "Inter font downloaded and installed"
 fi
 fc-cache -fv &>/dev/null
 success "Font cache updated"
 
-# ── Step 6: Backup existing configs ──────────────────────────────────────────
+# ── Step 6: Oh My Zsh ─────────────────────────────────────────────────────────
+step "Installing Oh My Zsh"
+
+info "Installing Oh My Zsh (unattended)..."
+rm -rf "$HOME/.oh-my-zsh" 2>/dev/null || true
+RUNZSH=no KEEP_ZSHRC=yes \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
+    "" --unattended
+success "Oh My Zsh installed"
+
+# ── Step 7: Powerlevel10k ─────────────────────────────────────────────────────
+step "Installing Powerlevel10k"
+
+P10K_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+info "Cloning Powerlevel10k..."
+rm -rf "$P10K_DIR" 2>/dev/null || true
+git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_DIR"
+success "Powerlevel10k installed"
+
+# ── Step 8: ZSH plugins ───────────────────────────────────────────────────────
+step "Installing ZSH plugins"
+
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+
+info "Installing zsh-autosuggestions..."
+rm -rf "$ZSH_CUSTOM/plugins/zsh-autosuggestions" 2>/dev/null || true
+git clone https://github.com/zsh-users/zsh-autosuggestions \
+    "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+success "zsh-autosuggestions installed"
+
+info "Installing zsh-syntax-highlighting..."
+rm -rf "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" 2>/dev/null || true
+git clone https://github.com/zsh-users/zsh-syntax-highlighting \
+    "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+success "zsh-syntax-highlighting installed"
+
+# ── Step 9: Backup existing configs ───────────────────────────────────────────
 step "Backing up existing configs"
+
 BACKUP_DIR="$HOME/.config.bak-arcos-$(date +%Y%m%d-%H%M%S)"
-DOTFILES_TO_COPY=(hypr waybar rofi kitty swaync hypridle wallust swayosd btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct fish)
+DOTFILES_TO_COPY=(hypr waybar rofi kitty swaync wallust swayosd btop fresh gtk-3.0 gtk-4.0 nwg-look geany qt6ct)
+info "Backing up ArcOS-related config folders to $BACKUP_DIR ..."
 mkdir -p "$BACKUP_DIR"
 for folder in "${DOTFILES_TO_COPY[@]}"; do
     [[ -d "$HOME/.config/$folder" ]] && cp -r "$HOME/.config/$folder" "$BACKUP_DIR/" && success "Backed up $folder"
 done
+[[ -f "$HOME/.zshrc" ]]    && cp "$HOME/.zshrc"    "$HOME/.zshrc.bak-arcos"    && success ".zshrc backed up"
+[[ -f "$HOME/.p10k.zsh" ]] && cp "$HOME/.p10k.zsh" "$HOME/.p10k.zsh.bak-arcos" && success ".p10k.zsh backed up"
 
-# ── Step 7: Copy dotfiles ─────────────────────────────────────────────────────
+# ── Step 10: Copy dotfiles ────────────────────────────────────────────────────
 step "Installing dotfiles"
+
 DOTFILES="$REPO_DIR/dotfiles"
 
 copy_config() {
@@ -290,7 +375,6 @@ copy_config "waybar"
 copy_config "rofi"
 copy_config "kitty"
 copy_config "swaync"
-copy_config "hypridle"
 copy_config "wallust"
 copy_config "swayosd"
 copy_config "btop"
@@ -301,53 +385,52 @@ copy_config "nwg-look"
 copy_config "geany"
 copy_config "qt6ct"
 
-# Fish config
-if [[ -d "$REPO_DIR/fish" ]]; then
-    mkdir -p "$HOME/.config/fish"
-    cp -r "$REPO_DIR/fish/." "$HOME/.config/fish/"
-    success "Copied fish config"
-fi
+[[ -f "$REPO_DIR/zsh/.zshrc" ]]    && cp "$REPO_DIR/zsh/.zshrc"    "$HOME/.zshrc"    && success "Copied .zshrc"
+[[ -f "$REPO_DIR/zsh/.p10k.zsh" ]] && cp "$REPO_DIR/zsh/.p10k.zsh" "$HOME/.p10k.zsh" && success "Copied .p10k.zsh"
 
 chmod +x "$HOME/.config/hypr/scripts/"*.sh 2>/dev/null || true
 success "Scripts made executable"
 
-# Generate resolution-aware hyprlock config
-info "Generating hyprlock layout config..."
-bash "$HOME/.config/hypr/scripts/hyprlock-gen.sh" --now 2>/dev/null || \
-    warn "hyprlock-gen skipped (Hyprland not running yet — auto-runs on next login)"
+mkdir -p "$HOME/Pictures/Wallpapers"
+if [[ -d "$REPO_DIR/assets/wallpapers" ]]; then
+    cp "$REPO_DIR/assets/wallpapers/"* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+    success "Wallpapers copied"
+fi
 
-mkdir -p "$HOME/Pictures/Screenshots" "$HOME/Pictures/Wallpapers"
-
-# ── Step 8: System configs ────────────────────────────────────────────────────
+# ── Step 11: System configs ───────────────────────────────────────────────────
 step "Applying system configs"
 
 [[ -f "$REPO_DIR/system/99-swappiness.conf" ]] && \
     sudo cp "$REPO_DIR/system/99-swappiness.conf" /etc/sysctl.d/ && \
-    sudo sysctl vm.swappiness=20 && success "Swappiness set to 20"
+    sudo sysctl vm.swappiness=20 && \
+    success "Swappiness set to 20"
 
 [[ -f "$REPO_DIR/system/sddm.conf" ]] && \
-    sudo cp "$REPO_DIR/system/sddm.conf" /etc/sddm.conf && success "SDDM config applied"
+    sudo cp "$REPO_DIR/system/sddm.conf" /etc/sddm.conf && \
+    success "SDDM config applied"
 
 sudo usermod -aG input "$USER"
 success "Added $USER to input group"
 
+# Apply GTK theme, icons and cursor silently via gsettings
 if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
-    gsettings set org.gnome.desktop.interface gtk-theme      "adw-gtk3-dark"         2>/dev/null || true
-    gsettings set org.gnome.desktop.interface icon-theme     "Papirus-Dark"           2>/dev/null || true
-    gsettings set org.gnome.desktop.interface cursor-theme   "Bibata-Modern-Classic"  2>/dev/null || true
-    gsettings set org.gnome.desktop.interface cursor-size    24                       2>/dev/null || true
-    gsettings set org.gnome.desktop.interface color-scheme   "prefer-dark"            2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark"       2>/dev/null || true
+    gsettings set org.gnome.desktop.interface icon-theme "Papirus-Dark"        2>/dev/null || true
+    gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Classic" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface cursor-size 24                   2>/dev/null || true
+    gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"       2>/dev/null || true
     success "GTK theme, icons and cursor applied"
 else
     info "gsettings skipped (no DBus session — will apply on first login via nwg-look)"
 fi
 
-# ── Step 9: XDG user dirs ─────────────────────────────────────────────────────
+# ── Step 12: XDG user dirs ────────────────────────────────────────────────────
 step "Setting up XDG user directories"
+
 xdg-user-dirs-update --force
 success "XDG user dirs created"
 
-# ── Step 10: Enable services ──────────────────────────────────────────────────
+# ── Step 13: Enable services ──────────────────────────────────────────────────
 step "Enabling services"
 
 sudo systemctl enable sddm
@@ -365,37 +448,32 @@ if [[ "$INSTALL_BT" == "y" ]]; then
 fi
 
 if [[ "$IS_LAPTOP" == "y" ]]; then
-    sudo systemctl enable --now power-profiles-daemon 2>/dev/null || \
-        warn "power-profiles-daemon not found (may already be active on CachyOS)"
+    sudo systemctl enable tlp
     sudo systemctl enable acpid
-    success "Laptop power management enabled"
+    success "laptop power management enabled (tlp, acpid)"
 fi
 
-# Set Fish as default shell
-if command -v fish &>/dev/null; then
-    FISH_PATH="$(which fish)"
-    chsh -s "$FISH_PATH" "$USER"
-    success "Default shell set to Fish"
-else
-    warn "fish not found in PATH — shell not changed"
-fi
+# ── Step 13b: Set ZSH as default shell ────────────────────────────────────────
+ZSH_PATH="$(which zsh)"
+chsh -s "$ZSH_PATH" "$USER"
+success "Default shell set to ZSH"
 
-# ── Step 11: Final setup ──────────────────────────────────────────────────────
+# ── Step 14: Initial wallust run + cleanup ────────────────────────────────────
 step "Final setup"
 
-FIRST_WALLPAPER=$(find "$HOME/Pictures/Wallpapers" -type f \
-    \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" -o -iname "*.webp" \) | head -1)
+FIRST_WALLPAPER=$(find "$HOME/Pictures/Wallpapers" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" \) | head -1)
 if [[ -n "$FIRST_WALLPAPER" ]]; then
     mkdir -p "$HOME/.cache/wallust"
     wallust run "$FIRST_WALLPAPER" 2>/dev/null || true
     echo "$FIRST_WALLPAPER" > "$HOME/.cache/wallust/wallpaper"
     success "wallust initialized with: $(basename "$FIRST_WALLPAPER")"
 else
-    warn "No wallpapers found — add some to ~/Pictures/Wallpapers and run: wallust run ~/Pictures/Wallpapers/yourwallpaper.jpg"
+    warn "No wallpapers found — run manually after reboot: wallust run ~/Pictures/Wallpapers/yourwallpaper.jpg"
 fi
 
 paccache -rk2 2>/dev/null || true
-success "Package cache cleaned"
+rm -rf /tmp/arcos-* 2>/dev/null || true
+success "Cache cleaned"
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 INSTALL_END=$(date +%s)
@@ -418,31 +496,31 @@ echo ""
 echo -e "  ${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
 echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Keybinds${RESET}"
 echo -e "  ${CYAN}│${RESET}  ${DIM}─────────────────────────────────────────────────────${RESET}"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Enter${RESET}        Terminal (kitty)"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Space${RESET}        App launcher (rofi)"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + E${RESET}            File manager (Thunar)"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + W${RESET}            Wallpaper picker"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Shift+W${RESET}      Toggle dark/light mode"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + L${RESET}            Lock screen"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + X${RESET}            Power menu"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + P${RESET}            Audio mixer (pwvucontrol)"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + N${RESET}            Notification center"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + V / .${RESET}        Clipboard / Emoji picker"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + F${RESET}            Fullscreen"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Shift+F${RESET}      Toggle floating"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Shift + Alt + Arrows${RESET} Move window in workspace"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Q${RESET}            Close window"
-echo -e "  ${CYAN}│${RESET}  ${CYAN}Print${RESET}                Screenshot (region)"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Enter${RESET}      Terminal (kitty)"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Space${RESET}      App launcher (rofi)"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + E${RESET}          File manager (Thunar)"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + W${RESET}          Wallpaper picker"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Shift+W${RESET}    Toggle dark/light mode"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + L${RESET}          Lock screen"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + X${RESET}          Power menu"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + N${RESET}          Notification center"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + V${RESET}          Clipboard history"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + .${RESET}          Emoji picker"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Super + Q${RESET}          Close window"
+echo -e "  ${CYAN}│${RESET}  ${CYAN}Print${RESET}              Screenshot (region)"
 echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
 echo ""
 echo -e "  ${CYAN}┌─────────────────────────────────────────────────────────┐${RESET}"
 echo -e "  ${CYAN}│${RESET}  ${BOLD}${WHITE}Post-install steps${RESET}"
 echo -e "  ${CYAN}│${RESET}  ${DIM}─────────────────────────────────────────────────────${RESET}"
-echo -e "  ${CYAN}│${RESET}  ${YELLOW}1.${RESET} Set your resolution in ${BOLD}~/.config/hypr/monitor.conf${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${YELLOW}1.${RESET} Set your resolution, refresh rate and scaling:"
+echo -e "  ${CYAN}│${RESET}     Edit ${BOLD}~/.config/hypr/monitor.conf${RESET}"
 echo -e "  ${CYAN}│${RESET}     Run ${BOLD}hyprctl monitors${RESET} to find your monitor name"
-echo -e "  ${CYAN}│${RESET}  ${YELLOW}2.${RESET} Add wallpapers to ${BOLD}~/Pictures/Wallpapers${RESET}"
-echo -e "  ${CYAN}│${RESET}     Press ${BOLD}Super + W${RESET} to pick one after reboot"
-echo -e "  ${CYAN}│${RESET}  ${YELLOW}3.${RESET} On first reboot, do a second reboot if anything looks off"
+echo -e "  ${CYAN}│${RESET}     Example: ${DIM}monitor=DP-1,1920x1080@60,0x0,1${RESET}"
+echo -e "  ${CYAN}│${RESET}  ${YELLOW}2.${RESET} Set your wallpaper after reboot:"
+echo -e "  ${CYAN}│${RESET}     Press ${BOLD}Super + W${RESET} to open the wallpaper picker"
+echo -e "  ${CYAN}│${RESET}  ${YELLOW}3.${RESET} On first reboot things may not look perfect —"
+echo -e "  ${CYAN}│${RESET}     ${DIM}do a second reboot if anything looks off${RESET}"
 echo -e "  ${CYAN}└─────────────────────────────────────────────────────────┘${RESET}"
 echo ""
 echo -e "  ${YELLOW}${BOLD}  ⚠  Reboot now to complete the setup${RESET}"

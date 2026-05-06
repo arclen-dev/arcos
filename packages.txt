@@ -1,23 +1,22 @@
 # ArcOS packages
-# Installed via: yay -S --needed --noconfirm $(grep -v '^#' packages.txt | grep -v '^$' | tr '\n' ' ')
+# These are installed via: yay -S --needed --noconfirm $(grep -v '^#' packages.txt | tr '\n' ' ')
 # GPU-specific and optional packages are handled separately in install.sh
 
-# ── Core ─────────────────────────────────────────────────────────────────
+# ── Core ────────────────────────────────────────────────────────────────
 base-devel
 git
-fish
+zsh
 nano
 kitty
 
-# ── Hyprland ─────────────────────────────────────────────────────────────
+# ── Hyprland ────────────────────────────────────────────────────────────
 hyprland
 hyprlock
-hypridle
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
 uwsm
 
-# ── Wayland utilities ─────────────────────────────────────────────────────
+# ── Wayland utilities ───────────────────────────────────────────────────
 awww
 waybar-git
 rofi-wayland
@@ -31,9 +30,7 @@ grim
 hyprshot
 imagemagick
 
-# ── Audio ─────────────────────────────────────────────────────────────────
-# Note: pipewire-jack conflicts with jack2 if jack2 is installed.
-# The installer removes jack2 first before installing these.
+# ── Audio ────────────────────────────────────────────────────────────────
 pipewire
 pipewire-alsa
 pipewire-jack
@@ -41,27 +38,25 @@ pipewire-pulse
 wireplumber
 playerctl
 pwvucontrol
-alsa-utils
-sof-firmware
 
-# ── Network ───────────────────────────────────────────────────────────────
+# ── Network ─────────────────────────────────────────────────────────────
 networkmanager
 network-manager-applet
 
-# ── Theming ───────────────────────────────────────────────────────────────
+# ── Theming ─────────────────────────────────────────────────────────────
 adw-gtk-theme
 bibata-cursor-theme
 papirus-icon-theme
 nwg-look
 qt6ct
 
-# ── Fonts ─────────────────────────────────────────────────────────────────
+# ── Fonts ────────────────────────────────────────────────────────────────
 otf-font-awesome
 ttf-orbitron
 noto-fonts-emoji
-# Inter and FiraCode Nerd Font are bundled in fonts/ and installed by install.sh
+# Inter and FiraCode Nerd Font are installed manually by install.sh
 
-# ── Applications ──────────────────────────────────────────────────────────
+# ── Applications ─────────────────────────────────────────────────────────
 brave-bin
 thunar
 thunar-archive-plugin
@@ -80,14 +75,13 @@ fastfetch
 fresh-editor-bin
 geany
 
-# ── System ────────────────────────────────────────────────────────────────
+# ── System ───────────────────────────────────────────────────────────────
 polkit-gnome
 sddm
 xdg-user-dirs
 libnotify
-upower
 
-# ── Shell & Terminal utils ────────────────────────────────────────────────
+# ── Shell ─────────────────────────────────────────────────────────────────
 vivid
 fzf
 zram-generator

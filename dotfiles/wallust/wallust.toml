@@ -1,27 +1,29 @@
-# Color backend
+# Color backend - fast_resize is the fastest built-in method
 backend = "fast-resize"
 
-# Palette — dark16 for vivid dark colors
+# Palette type - dark16 gives vivid dark colors, great for ricing
 palette = "dark16"
 
-# Colorspace
+# Colorspace affects how colors are extracted and how vibrant they are
 colorspace = "lch"
 
 [templates]
-waybar.template   = "colors-waybar.css"
-waybar.target     = "~/.config/waybar/wallust/colors-waybar.css"
+# Waybar colors
+waybar.template = "colors-waybar.css"
+waybar.target = "~/.config/waybar/wallust/colors-waybar.css"
 
-rofi.template     = "colors-rofi.rasi"
-rofi.target       = "~/.config/rofi/wallust/colors-rofi.rasi"
+# Rofi colors
+rofi.template = "colors-rofi.rasi"
+rofi.target = "~/.config/rofi/wallust/colors-rofi.rasi"
 
+# Hyprland colors (borders etc.)
 hyprland.template = "colors-hyprland.conf"
-hyprland.target   = "~/.config/hypr/wallust/wallust-hyprland.conf"
+hyprland.target = "~/.config/hypr/wallust/wallust-hyprland.conf"
 
-kitty.template    = "colors-kitty.conf"
-kitty.target      = "~/.config/kitty/wallust-colors.conf"
+# Kitty colors
+kitty.template = "colors-kitty.conf"
+kitty.target = "~/.config/kitty/wallust-colors.conf"
 
-geany.template    = "colors-geany.conf"
-geany.target      = "~/.config/geany/colorschemes/wallust.conf"
-
-# hyprlock colors are generated dynamically by hyprlock-gen.sh
-# which is called after wallust run in wallpaper-select.sh and toggle-mode.sh
+# Geany colors
+geany.template = "colors-geany.conf"
+geany.target = "~/.config/geany/colorschemes/wallust.conf"

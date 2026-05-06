@@ -17,8 +17,8 @@ window {
     location:         north;
     anchor:           north;
     x-offset:         0;
-    y-offset:         52px;     /* clears the waybar pill, fine at any res */
-    width:            33%;       /* % of screen width — adapts to any resolution */
+    y-offset:         52px;
+    width:            480px;
     background-color: @background;
     border:           1px solid;
     border-color:     @selected;

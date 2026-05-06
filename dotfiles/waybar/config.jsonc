@@ -1,33 +1,39 @@
 // -*- mode: jsonc -*-
 {
+    // ─── Bar Layout ──────────────────────────────────────────────────
     "layer": "top",
     "position": "top",
     "exclusive": true,
     "passthrough": false,
     "margin-top": 2,
+    
     "spacing": 0,
 
-    "modules-left":   [],
+    // ─── All modules in center — pill auto-sizes to content ──────────
+    "modules-left": [],
     "modules-center": [
         "clock",
         "hyprland/workspaces",
         "custom/mpris",
         "pulseaudio",
-        "battery",
         "network",
         "tray"
     ],
     "modules-right": [],
 
+    // ─── Workspaces ──────────────────────────────────────────────────
     "hyprland/workspaces": {
         "disable-scroll": true,
         "all-outputs": true,
         "warp-on-scroll": false,
         "format": "{name}",
         "on-click": "activate",
-        "persistent-workspaces": { "*": 4 }
+        "persistent-workspaces": {
+            "*": 4
+        }
     },
 
+    // ─── Clock (12hr) ────────────────────────────────────────────────
     "clock": {
         "format": "  {:%I:%M %p}",
         "format-alt": "  {:%a, %d %b %Y}",
@@ -45,6 +51,7 @@
         }
     },
 
+    // ─── Media (MPRIS marquee) ──────────────────────────────────────
     "custom/mpris": {
         "exec": "~/.config/hypr/scripts/mpris-scroll.sh",
         "format": "{}",
@@ -57,13 +64,14 @@
         "tooltip": false
     },
 
+    // ─── Audio ───────────────────────────────────────────────────────
     "pulseaudio": {
         "format": "{icon} {volume}%",
         "format-muted": "󰝟",
         "format-icons": {
-            "headphone": "",
-            "headset":   "",
-            "default":  ["󰕿", "󰖀", "󰕾"]
+            "headphone":  "",
+            "headset":    "",
+            "default":   ["󰕿", "󰖀", "󰕾"]
         },
         "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
         "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%+",
@@ -71,29 +79,28 @@
         "tooltip-format": "󰋋  {desc}"
     },
 
-    "battery": {
-        "states": { "good": 80, "warning": 30, "critical": 15 },
-        "format":          "{icon} {capacity}%",
-        "format-charging": "󰂄 {capacity}%",
-        "format-plugged":  "󰚥 {capacity}%",
-        "format-full":     "󰁹 Full",
-        "format-icons":    ["󰁺","󰁻","󰁼","󰁽","󰁾","󰁿","󰂀","󰂁","󰂂","󰁹"],
-        "tooltip-format":  "{timeTo}  ·  {power:.1f}W",
-        "interval": 30
-    },
-
+    // ─── Network ─────────────────────────────────────────────────────
     "network": {
-        "format-wifi":       "󰤨 {essid}",
-        "format-ethernet":   "󰈀 Wired",
-        "format-disconnected":"󰤭",
-        "tooltip-format-wifi":      "󰤨  {essid}\n  {ipaddr}\n󰓅  {signalStrength}%",
-        "tooltip-format-ethernet":  "󰈀  {ifname}\n  {ipaddr}",
+        "format-wifi": "󰤨 {essid}",
+        "format-ethernet": "󰈀 Wired",
+        "format-disconnected": "󰤭",
+        "tooltip-format-wifi": "󰤨  {essid}\n  {ipaddr}\n󰓅  {signalStrength}%",
+        "tooltip-format-ethernet": "󰈀  {ifname}\n  {ipaddr}",
         "tooltip-format-disconnected": "󰤭  No connection"
     },
 
+    // ─── Tray ────────────────────────────────────────────────────────
     "tray": {
         "icon-size": 16,
         "spacing": 8,
         "show-passive-items": true
     }
+
+    // "wlr/taskbar": {
+    //     "format": "{icon}",
+    //     "icon-size": 18,
+    //     "tooltip-format": "{title}",
+    //     "on-click": "activate",
+    //     "on-click-middle": "close"
+    // }
 }
