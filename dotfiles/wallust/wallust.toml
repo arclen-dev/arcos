@@ -1,8 +1,8 @@
 # Color backend - fast_resize is the fastest built-in method
 backend = "fast-resize"
 
-# Palette type - dark16 gives vivid dark colors, great for ricing
-palette = "dark16"
+# Palette type - kmeans gives vivid dark colors, great for ricing
+palette = "kmeans"
 
 # Colorspace affects how colors are extracted and how vibrant they are
 colorspace = "lch"
